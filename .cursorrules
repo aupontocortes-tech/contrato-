@@ -1,0 +1,32 @@
+# Cursor Rules for Contraton
+
+## Project Context
+This is a Next.js 15 web application with TypeScript, Tailwind CSS, and Shadcn/ui.
+
+## Code Standards
+- Always use TypeScript with strict mode
+- Implement proper error handling
+- Follow OWASP Top 10 security guidelines
+- Validate all inputs with Zod
+- Use async/await pattern
+- Keep components small and focused
+
+## Security First
+- Never expose sensitive data
+- Always sanitize user inputs
+- Implement rate limiting
+- Use HTTPS everywhere
+- Configure security headers
+
+## Before Committing
+1. Run TypeScript check: npm run type-check
+2. Run linter: npm run lint
+3. Run tests: npm run test
+4. Update documentation if needed
+
+## AI Assistant Behavior
+- Always consider security implications
+- Suggest performance optimizations
+- Maintain consistent code style
+- Update tests when changing code
+- Document complex logic
