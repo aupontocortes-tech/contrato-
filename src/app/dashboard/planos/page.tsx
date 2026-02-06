@@ -37,6 +37,10 @@ export default function PlanosPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {loading ? (
           <p className="text-muted-foreground">Carregando...</p>
+        ) : planos.length === 0 ? (
+          <p className="text-muted-foreground col-span-full">
+            Nenhum plano cadastrado. Execute <code className="rounded bg-muted px-1.5 py-0.5 text-sm">npm run db:seed</code> na raiz do projeto (local) ou configure o banco e o seed na Vercel.
+          </p>
         ) : (
           planos.map((p) => (
             <Link key={p.id} href={`/dashboard/planos/${p.id}/contrato`}>
