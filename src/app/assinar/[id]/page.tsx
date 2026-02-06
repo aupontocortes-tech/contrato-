@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { DocumentoContrato } from "@/components/DocumentoContrato";
 import { toast } from "sonner";
 import { PenLine, Eraser } from "lucide-react";
