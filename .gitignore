@@ -17,6 +17,14 @@
 /.next/
 /out/
 
+# generated PDFs
+/public/contratos/
+
+# SQLite local
+prisma/*.db
+prisma/*.db-journal
+prisma/prisma/
+
 # production
 /build
 

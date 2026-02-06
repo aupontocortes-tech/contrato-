@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  nome      String
+  email     String   @unique
+  senha     String
+  tipo      String   @default("admin")
+  createdAt DateTime @default(now())
+}
+
+model Aluno {
+  id           Int        @id @default(autoincrement())
+  nome_completo String
+  cpf         String     @unique
+  email       String
+  telefone    String?
+  contratos   Contrato[]
+}
+
+model Plano {
+  id            Int        @id @default(autoincrement())
+  nome_plano    String
+  duracao_dias  Int
+  descricao     String?
+  contratos     Contrato[]
+}
+
+model Contrato {
+  id              Int       @id @default(autoincrement())
+  aluno_id        Int
+  plano_id        Int
+  status          String    @default("gerado")
+  data_inicio     DateTime
+  data_fim        DateTime
+  link_assinatura String?
+  pdf_url         String?
+  assinatura_url  String?
+  data_assinatura DateTime?
+  criado_em       DateTime  @default(now())
+  aluno           Aluno     @relation(fields: [aluno_id], references: [id])
+  plano           Plano     @relation(fields: [plano_id], references: [id])
+}
