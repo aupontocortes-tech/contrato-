@@ -4,14 +4,24 @@ Sistema simples de gestão de contratos: cadastro de alunos, planos, geração d
 
 ## Início rápido
 
-1. **Variáveis de ambiente**  
-   Copie `.env.example` para `.env` (ou use o `.env` já criado com `DATABASE_URL="file:./prisma/dev.db"`).
+1. **Banco de dados (PostgreSQL)**  
+   Crie um banco na [Supabase](https://supabase.com) (grátis):
+   - Crie um projeto em https://supabase.com/dashboard
+   - Em **Project Settings** → **Database** copie a **Connection string** (URI)
+   - Use a opção **Transaction** (porta 5432) para migrações e seed
 
-2. **Banco de dados**  
-   As migrações já foram aplicadas. Para popular o admin e os planos:
+2. **Variáveis de ambiente**  
+   Copie `.env.example` para `.env` e defina:
+   ```env
+   DATABASE_URL="postgresql://postgres.[ref]:[SENHA]@aws-0-[região].pooler.supabase.com:5432/postgres"
+   ```
+
+3. **Migrações e seed**  
    ```bash
+   npx prisma migrate deploy
    npm run db:seed
    ```
+   Isso cria as tabelas e popula admin + planos.
 
 3. **Desenvolvimento**
    ```bash
@@ -36,7 +46,7 @@ Sistema simples de gestão de contratos: cadastro de alunos, planos, geração d
 
 ## Estrutura
 
-- **Banco:** SQLite (Prisma) — tabelas `User`, `Aluno`, `Plano`, `Contrato`.
+- **Banco:** PostgreSQL (Prisma) — use Supabase, Neon ou Vercel Postgres. Tabelas: `User`, `Aluno`, `Plano`, `Contrato`.
 - **Backend:** Next.js API Routes (auth, alunos, planos, contratos, gerar PDF, assinatura).
 - **Frontend:** Next.js App Router, Shadcn/UI, Tailwind.
 - **PDF:** pdf-lib (geração em servidor).
