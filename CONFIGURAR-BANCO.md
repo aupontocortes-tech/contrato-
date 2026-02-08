@@ -156,6 +156,23 @@ Se isso acontecer, o aplicativo está rodando **perfeitamente com o banco de dad
 
 ---
 
+## Vercel (deploy em produção)
+
+Para o build e o app funcionarem na Vercel, a **DATABASE_URL** precisa estar configurada no projeto:
+
+1. Acesse o [Dashboard da Vercel](https://vercel.com/dashboard) e abra o projeto do Contraton.
+2. Vá em **Settings** → **Environment Variables**.
+3. Clique em **Add New** e preencha:
+   - **Name:** `DATABASE_URL`
+   - **Value:** a mesma URL que está no seu `.env` local (Connection String do Supabase, Session mode, porta 5432, terminando em `?sslmode=require`).
+   - Marque **Production** e **Preview**.
+4. Clique em **Save**.
+5. Faça um novo deploy: **Deployments** → no último deploy, clique nos três pontinhos → **Redeploy**.
+
+Sem a `DATABASE_URL`, o build falha com o erro **P1012: Environment variable not found: DATABASE_URL**.
+
+---
+
 ## Resumo final
 
 | O que | Onde / Como |
