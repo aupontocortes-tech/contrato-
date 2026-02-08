@@ -2,7 +2,7 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// PostgreSQL (Supabase). Defina DATABASE_URL no .env com a connection string do Supabase.
+// PostgreSQL (Supabase). DATABASE_URL deve ser Session mode (porta 5432). Ver scripts/db-setup-supabase.md
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")

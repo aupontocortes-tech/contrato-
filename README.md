@@ -52,6 +52,19 @@ Sistema simples de gestão de contratos: cadastro de alunos, planos, geração d
 - **PDF:** pdf-lib (geração em servidor).
 - **Assinatura:** Página mock em `/assinar/[id]`; preparado para integração futura com ZapSign ou Clicksign.
 
+## Deploy na Vercel
+
+1. Conecte o repositório ao projeto na [Vercel](https://vercel.com).
+2. **Variável obrigatória:** em **Settings** → **Environment Variables** adicione:
+   - **Name:** `DATABASE_URL`
+   - **Value:** a connection string do PostgreSQL (ex.: Supabase, Neon). Use a mesma URI que no `.env` local (Transaction, porta 5432).
+   - Marque **Production**, **Preview** e **Development** se quiser que valha para todos os ambientes.
+3. Faça o deploy. O build roda `prisma generate` e `prisma migrate deploy`; sem `DATABASE_URL` o build falha com `Environment variable not found: DATABASE_URL`.
+4. Após o primeiro deploy, rode o seed **uma vez** no banco (pode ser local com `DATABASE_URL` apontando para o mesmo banco, ou via script/CI):
+   ```bash
+   npm run db:seed
+   ```
+
 ## Scripts
 
 - `npm run dev` — desenvolvimento

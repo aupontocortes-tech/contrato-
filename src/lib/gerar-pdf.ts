@@ -116,6 +116,11 @@ export async function gerarPdfFromContrato(contrato: ContratoEstruturado): Promi
   y = idResult.y - LINE_HEIGHT;
 
   const dados = [`Nome completo: ${contrato.nomeContratante}`, `CPF: ${contrato.cpfContratante}`];
+  if (contrato.dataNascimento !== undefined) {
+    dados.push(`Data de nascimento: ${contrato.dataNascimento || "____ / ____ / ______"}`);
+  }
+  if (contrato.telefone) dados.push(`Telefone: ${contrato.telefone}`);
+  if (contrato.email) dados.push(`E-mail: ${contrato.email}`);
   for (const d of dados) {
     page.drawText(d, { x: MARGIN, y, size: FONT_SIZE_NORMAL, font, color: rgb(0, 0, 0) });
     y -= LINE_HEIGHT;
@@ -141,6 +146,32 @@ export async function gerarPdfFromContrato(contrato: ContratoEstruturado): Promi
     const clResult = drawLines(doc, page, font, fontBold, textoLines, { x: MARGIN, y });
     page = clResult.page;
     y = clResult.y - LINE_HEIGHT;
+  }
+
+  // Bloco de assinatura digital (ex.: WhatsApp) quando existir
+  if (contrato.blocoAssinaturaDigital) {
+    if (y < MARGIN + 120) {
+      page = doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+      y = PAGE_HEIGHT - MARGIN;
+    }
+    y -= LINE_HEIGHT * 2;
+    const blocoLines = contrato.blocoAssinaturaDigital.split(/\n/);
+    for (const ln of blocoLines) {
+      if (y < MARGIN + 40) {
+        page = doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+        y = PAGE_HEIGHT - MARGIN;
+      }
+      const wrapped = wrapText(ln.trim());
+      for (const w of wrapped) {
+        if (y < MARGIN + 40) {
+          page = doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+          y = PAGE_HEIGHT - MARGIN;
+        }
+        page.drawText(w, { x: MARGIN, y, size: FONT_SIZE_NORMAL, font, color: rgb(0, 0, 0) });
+        y -= LINE_HEIGHT;
+      }
+    }
+    y -= LINE_HEIGHT * 2;
   }
 
   // Assinaturas (nova página se necessário)
