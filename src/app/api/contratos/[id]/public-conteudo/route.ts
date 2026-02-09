@@ -34,6 +34,7 @@ export async function GET(
     contrato: {
       id: contrato.id,
       status: contrato.status,
+      assinatura_professor_url: contrato.assinatura_professor_url,
       aluno: { nome_completo: contrato.aluno.nome_completo },
       plano: { nome_plano: contrato.plano.nome_plano },
     },

@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
+import { Plus } from "lucide-react";
+import { AlunoModal } from "@/components/aluno-modal";
 
 type Aluno = {
   id: number;
@@ -18,15 +18,9 @@ type Aluno = {
 export default function AlunosPage() {
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({
-    nome_completo: "",
-    cpf: "",
-    email: "",
-    telefone: "",
-  });
-  const [saving, setSaving] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
 
-  useEffect(() => {
+  function loadAlunos() {
     fetch("/api/alunos")
       .then((r) => r.json())
       .then((data) => {
@@ -34,111 +28,78 @@ export default function AlunosPage() {
       })
       .catch(() => toast.error("Erro ao carregar alunos"))
       .finally(() => setLoading(false));
-  }, []);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      const res = await fetch("/api/alunos", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...form,
-          telefone: form.telefone || undefined,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error || "Erro ao cadastrar");
-        return;
-      }
-      toast.success("Aluno cadastrado!");
-      setAlunos((prev) => [...prev, data]);
-      setForm({ nome_completo: "", cpf: "", email: "", telefone: "" });
-    } catch {
-      toast.error("Erro de conexão");
-    } finally {
-      setSaving(false);
-    }
   }
 
-  return (
-    <div className="space-y-8">
-      <h1 className="text-2xl font-semibold">Alunos</h1>
+  useEffect(() => {
+    loadAlunos();
+  }, []);
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Novo aluno</CardTitle>
-          <CardDescription>Preencha os dados para cadastrar um aluno.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Nome completo</Label>
-              <Input
-                value={form.nome_completo}
-                onChange={(e) => setForm((f) => ({ ...f, nome_completo: e.target.value }))}
-                required
-              />
+  return (
+    <div className="space-y-6">
+      {/* Cabeçalho com título e botão */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold text-gray-900">Alunos</h1>
+        <Button
+          onClick={() => setModalOpen(true)}
+          className="bg-blue-600 hover:bg-blue-700 text-white"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Novo aluno
+        </Button>
+      </div>
+
+      {/* Lista de alunos */}
+      <Card className="border border-gray-200 bg-white shadow-sm">
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <p className="text-gray-500">Carregando...</p>
             </div>
-            <div className="space-y-2">
-              <Label>CPF</Label>
-              <Input
-                value={form.cpf}
-                onChange={(e) => setForm((f) => ({ ...f, cpf: e.target.value }))}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>E-mail</Label>
-              <Input
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Telefone (opcional)</Label>
-              <Input
-                value={form.telefone}
-                onChange={(e) => setForm((f) => ({ ...f, telefone: e.target.value }))}
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <Button type="submit" disabled={saving}>
-                {saving ? "Salvando..." : "Cadastrar aluno"}
+          ) : alunos.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <p className="text-gray-600 mb-2">Nenhum aluno cadastrado.</p>
+              <Button
+                variant="outline"
+                onClick={() => setModalOpen(true)}
+                className="mt-2"
+              >
+                Cadastrar primeiro aluno
               </Button>
             </div>
-          </form>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Lista de alunos</CardTitle>
-          <CardDescription>{alunos.length} aluno(s) cadastrado(s).</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <p className="text-muted-foreground">Carregando...</p>
-          ) : alunos.length === 0 ? (
-            <p className="text-muted-foreground">Nenhum aluno cadastrado.</p>
           ) : (
-            <ul className="divide-y">
+            <div className="divide-y divide-gray-200">
               {alunos.map((a) => (
-                <li key={a.id} className="py-3 flex justify-between items-center">
-                  <div>
-                    <p className="font-medium">{a.nome_completo}</p>
-                    <p className="text-sm text-muted-foreground">{a.email} · CPF {a.cpf}</p>
+                <div
+                  key={a.id}
+                  className="p-4 hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-gray-600 font-medium text-sm">
+                        {a.nome_completo.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900">{a.nome_completo}</p>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {a.email} · CPF {a.cpf}
+                        {a.telefone && ` · ${a.telefone}`}
+                      </p>
+                    </div>
                   </div>
-                </li>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Modal de cadastro */}
+      <AlunoModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        onSuccess={loadAlunos}
+      />
     </div>
   );
 }

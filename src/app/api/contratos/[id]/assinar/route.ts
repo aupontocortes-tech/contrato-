@@ -14,6 +14,14 @@ export async function POST(
   }
   const contrato = await prisma.contrato.findUnique({ where: { id: contratoId } });
   if (!contrato) return NextResponse.json({ error: "Contrato não encontrado" }, { status: 404 });
+  
+  // Verifica se o professor já assinou
+  if (!contrato.assinatura_professor_url) {
+    return NextResponse.json(
+      { error: "O professor ainda não assinou este contrato." },
+      { status: 400 }
+    );
+  }
 
   let assinaturaUrl: string | null = null;
   try {

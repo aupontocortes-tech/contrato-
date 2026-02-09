@@ -35,17 +35,19 @@ model Plano {
 }
 
 model Contrato {
-  id              Int       @id @default(autoincrement())
-  aluno_id        Int
-  plano_id        Int
-  status          String    @default("gerado")
-  data_inicio     DateTime
-  data_fim        DateTime
-  link_assinatura String?
-  pdf_url         String?
-  assinatura_url  String?
-  data_assinatura DateTime?
-  criado_em       DateTime  @default(now())
-  aluno           Aluno     @relation(fields: [aluno_id], references: [id])
-  plano           Plano     @relation(fields: [plano_id], references: [id])
+  id                    Int       @id @default(autoincrement())
+  aluno_id              Int
+  plano_id              Int
+  status                String    @default("gerado")
+  data_inicio           DateTime
+  data_fim              DateTime
+  link_assinatura       String?
+  pdf_url               String?
+  assinatura_professor_url String?
+  data_assinatura_professor DateTime?
+  assinatura_url        String?
+  data_assinatura       DateTime?
+  criado_em             DateTime  @default(now())
+  aluno                 Aluno     @relation(fields: [aluno_id], references: [id])
+  plano                 Plano     @relation(fields: [plano_id], references: [id])
 }

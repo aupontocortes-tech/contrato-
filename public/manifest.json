@@ -1,0 +1,42 @@
+{
+  "name": "Contraton - Gestão de Contratos",
+  "short_name": "Contraton",
+  "description": "Sistema de gestão de contratos para personal trainers",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Novo Aluno",
+      "short_name": "Aluno",
+      "description": "Cadastrar novo aluno",
+      "url": "/dashboard/alunos",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Novo Contrato",
+      "short_name": "Contrato",
+      "description": "Criar novo contrato",
+      "url": "/dashboard/contratos",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
