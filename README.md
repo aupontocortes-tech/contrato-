@@ -59,8 +59,12 @@ Sistema simples de gestão de contratos: cadastro de alunos, planos, geração d
    - **Name:** `DATABASE_URL`
    - **Value:** a connection string do PostgreSQL (ex.: Supabase, Neon). Use a mesma URI que no `.env` local (Transaction, porta 5432).
    - Marque **Production**, **Preview** e **Development** se quiser que valha para todos os ambientes.
-3. Faça o deploy. O build roda `prisma generate` e `prisma migrate deploy`; sem `DATABASE_URL` o build falha com `Environment variable not found: DATABASE_URL`.
-4. Após o primeiro deploy, rode o seed **uma vez** no banco (pode ser local com `DATABASE_URL` apontando para o mesmo banco, ou via script/CI):
+3. Faça o deploy. O build roda apenas `prisma generate` e `next build` (não tenta conectar ao banco durante o build, evitando erro de rede na Vercel).
+4. **Migrações:** Rode **uma vez** (local com `DATABASE_URL` apontando para o banco de produção, ou após o deploy):
+   ```bash
+   npm run db:migrate
+   ```
+5. **Seed:** Depois rode o seed **uma vez** no banco:
    ```bash
    npm run db:seed
    ```
@@ -69,5 +73,6 @@ Sistema simples de gestão de contratos: cadastro de alunos, planos, geração d
 
 - `npm run dev` — desenvolvimento
 - `npm run build` — build de produção
+- `npm run db:migrate` — aplica migrações no banco (rode uma vez após deploy)
 - `npm run db:seed` — seed (admin + planos)
 - `npm run db:studio` — Prisma Studio (visualizar banco)

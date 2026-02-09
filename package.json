@@ -4,12 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && prisma migrate deploy && next build",
+    "build": "prisma generate && next build",
     "postinstall": "prisma generate",
     "start": "next start",
     "db:seed": "npx tsx prisma/seed.ts",
     "db:studio": "prisma studio",
-    "db:setup": "prisma migrate deploy && npm run db:seed"
+    "db:setup": "prisma migrate deploy && npm run db:seed",
+    "db:migrate": "prisma migrate deploy"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"

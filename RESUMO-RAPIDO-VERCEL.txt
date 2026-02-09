@@ -1,0 +1,54 @@
+═══════════════════════════════════════════════════════════════
+  RESUMO RÁPIDO: Configurar DATABASE_URL na Vercel
+═══════════════════════════════════════════════════════════════
+
+PROBLEMA:
+  ❌ Vercel não consegue conectar ao banco (erro P1001)
+
+SOLUÇÃO EM 3 PASSOS:
+═══════════════════════════════════════════════════════════════
+
+1️⃣ PEGAR URL NO SUPABASE
+   ────────────────────────────────────────────────────────────
+   • Acesse: https://supabase.com/dashboard
+   • Clique no projeto "contrato"
+   • Vá em: Settings (⚙️) → Database → Connection string → URI
+   • Selecione: "Direct connection" (NÃO Session pooler)
+   • Copie a URL completa
+   • Substitua [YOUR-PASSWORD] por: 177Thiago182
+   • Adicione no final: ?sslmode=require
+   
+   URL deve ficar assim:
+   postgresql://postgres.qwfmlrbnmnqvhlesfcuj:177Thiago182@db.qwfmlrbnmnqvhlesfcuj.supabase.co:5432/postgres?sslmode=require
+
+2️⃣ COLAR NA VERCEL
+   ────────────────────────────────────────────────────────────
+   • Acesse: https://vercel.com/dashboard
+   • Clique no projeto
+   • Vá em: Settings → Environment Variables
+   • Procure ou crie: DATABASE_URL
+   • Cole a URL completa do passo 1
+   • Marque: ✅ Production ✅ Preview ✅ Development
+   • Clique em: Save
+
+3️⃣ FAZER NOVO DEPLOY
+   ────────────────────────────────────────────────────────────
+   • Vá em: Deployments
+   • Clique nos três pontinhos (⋯) no último deploy
+   • Clique em: Redeploy
+   • Aguarde o build completar
+
+═══════════════════════════════════════════════════════════════
+
+⚠️ IMPORTANTE:
+   • Use "Direct connection" (não Session pooler)
+   • URL deve estar em UMA linha só (sem quebras)
+   • Não pode ter espaços no início ou fim
+   • Deve terminar com ?sslmode=require
+
+═══════════════════════════════════════════════════════════════
+
+Se ainda não funcionar, veja o arquivo CONFIGURAR-VERCEL.md
+para mais detalhes e alternativas.
+
+═══════════════════════════════════════════════════════════════
