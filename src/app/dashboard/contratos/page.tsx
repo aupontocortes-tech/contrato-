@@ -197,18 +197,6 @@ export default function ContratosPage() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      <div
-        style={{
-          padding: "10px 16px",
-          backgroundColor: "#dcfce7",
-          border: "1px solid #22c55e",
-          borderRadius: "8px",
-          fontSize: "14px",
-          color: "#166534",
-        }}
-      >
-        <strong>Interface nova.</strong> Se você vê esta faixa verde, a página está atualizada. Se não vê, faça um reload forçado (Ctrl+Shift+R) ou abra em aba anônima.
-      </div>
       <h1 style={{ fontSize: "24px", fontWeight: 600, color: "#111827" }}>Contratos</h1>
 
       {!loading && loadingOrErrorAlunosPlanos && (
