@@ -12,10 +12,19 @@ export async function GET(
     return NextResponse.json({ error: "ID inválido" }, { status: 400 });
   }
 
-  const contrato = await prisma.contrato.findUnique({
-    where: { id: contratoId },
-    include: { aluno: true, plano: true },
-  });
+  let contrato;
+  try {
+    contrato = await prisma.contrato.findUnique({
+      where: { id: contratoId },
+      include: { aluno: true, plano: true },
+    });
+  } catch (e) {
+    console.error("GET /api/contratos/[id]/conteudo:", e);
+    return NextResponse.json(
+      { error: "Não foi possível conectar ao banco. Verifique DATABASE_URL." },
+      { status: 500 }
+    );
+  }
   if (!contrato) return NextResponse.json({ error: "Contrato não encontrado" }, { status: 404 });
 
   const conteudo = getContratoEstruturado({

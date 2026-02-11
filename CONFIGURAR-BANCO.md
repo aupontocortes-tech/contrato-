@@ -60,9 +60,20 @@ Essa URL é como o “endereço + senha” que o aplicativo usa para falar com o
    ```
 10. Copie essa URL inteira (do `postgresql` até `sslmode=require`) e guarde num bloco de notas por enquanto.
 
-**Se sua senha tiver caracteres especiais** (como `@`, `#`, `%`, `?`):  
-- Ou use uma senha só com letras e números, **ou**  
-- Pesquise na internet “URL encode password” e substitua o caractere (ex.: `@` vira `%40`).
+**Se sua senha tiver caracteres especiais**, eles **precisam** ser codificados na URL (caso contrário a conexão falha com erro de autenticação). Use esta tabela:
+
+| Caractere | Substituir por |
+|-----------|----------------|
+| `@`       | `%40`          |
+| `:`       | `%3A`          |
+| `/`       | `%2F`          |
+| `?`       | `%3F`          |
+| `#`       | `%23`          |
+| `%`       | `%25`          |
+| espaço    | `%20`          |
+
+Exemplo: se a senha for `P@ss#123`, na URL use `P%40ss%23123`.  
+Recomendação: para evitar confusão, use uma senha só com letras e números ao criar o projeto no Supabase.
 
 ---
 
@@ -92,6 +103,8 @@ Dentro dessa pasta deve existir um arquivo chamado **`.env`** (pode estar oculto
    Troque **toda a parte** depois do `=` pela **URL completa** que você montou no Passo 2 (a que termina em `?sslmode=require`).
 
 5. Salve o arquivo e feche.
+
+**Quando alterar o `.env`:** sempre **reinicie o servidor** do Next.js (pare com Ctrl+C e rode de novo `npm run dev`). O Next.js lê as variáveis de ambiente só na inicialização.
 
 **Resumo:** o arquivo `.env` deve ficar em `contraton\.env` e conter só essa linha (ou outras que já existam), com `DATABASE_URL="..."` e a URL completa dentro das aspas.
 
@@ -129,6 +142,16 @@ Agora falta dizer ao aplicativo para **criar as tabelas no banco** e **inserir o
 
 ---
 
+## Como testar a conexão com o banco (rápido)
+
+Depois de configurar o `.env` e reiniciar o servidor:
+
+1. No navegador, abra: **http://localhost:3000/api/alunos**
+2. Se aparecer um JSON com uma **lista** (por exemplo `[]` ou `[{ ... }, ...]`), a conexão com o banco está ok.
+3. Se aparecer algo como `{"error":"Falha de autenticação no banco..."}` ou `{"error":"Não foi possível conectar..."}`, a `DATABASE_URL` está errada ou o servidor do banco está inacessível — confira usuário, senha (e encoding se tiver caracteres especiais), host e porta.
+
+---
+
 ## Conferindo se deu certo
 
 1. Inicie o aplicativo (se não estiver rodando):
@@ -153,6 +176,8 @@ Se isso acontecer, o aplicativo está rodando **perfeitamente com o banco de dad
 | **"the URL must start with the protocol postgresql://"** | A `DATABASE_URL` está vazia ou sem `postgresql://` no início. Cole a URL completa entre aspas no `.env`. |
 | **Erro de conexão / timeout / SSL** | Confirme que usou **Session mode (5432)** e que colocou `?sslmode=require` no final da URL. Confira a senha (sem espaços no início/fim). |
 | **"Plano não encontrado" ou lista vazia** | Rode de novo o segundo comando: `npm run db:seed`. Ele é quem insere os planos. |
+| **"password authentication failed" / P1000 / "Falha de autenticação no banco"** | Senha do banco incorreta ou com caracteres especiais não codificados. No Supabase, confira a senha em Project Settings → Database. Na URL, codifique `@` → `%40`, `#` → `%23`, etc. (veja a tabela no Passo 2). Depois de alterar o `.env`, reinicie o servidor (`npm run dev`). |
+| **"Can't reach database server" / P1001** | Servidor inacessível: confira se usou **Session mode (5432)** e `?sslmode=require`, e se o projeto Supabase está ativo. |
 
 ---
 

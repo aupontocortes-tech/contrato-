@@ -20,10 +20,11 @@ export async function GET() {
     return NextResponse.json(list);
   } catch (e) {
     console.error("GET /api/alunos:", e);
-    return NextResponse.json(
-      { error: "Não foi possível carregar os alunos. Tente novamente." },
-      { status: 500 }
-    );
+    const msg =
+      e && typeof e === "object" && "message" in e && String((e as { message: unknown }).message).toLowerCase().includes("auth")
+        ? "Falha de autenticação no banco. Verifique DATABASE_URL (usuário e senha)."
+        : "Não foi possível conectar ao banco. Verifique DATABASE_URL e se o servidor está acessível.";
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
 

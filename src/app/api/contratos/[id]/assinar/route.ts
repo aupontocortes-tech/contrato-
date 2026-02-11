@@ -12,7 +12,16 @@ export async function POST(
   if (Number.isNaN(contratoId)) {
     return NextResponse.json({ error: "ID inválido" }, { status: 400 });
   }
-  const contrato = await prisma.contrato.findUnique({ where: { id: contratoId } });
+  let contrato: Awaited<ReturnType<typeof prisma.contrato.findUnique>>;
+  try {
+    contrato = await prisma.contrato.findUnique({ where: { id: contratoId } });
+  } catch (e) {
+    console.error("POST /api/contratos/[id]/assinar:", e);
+    return NextResponse.json(
+      { error: "Não foi possível conectar ao banco. Verifique DATABASE_URL." },
+      { status: 500 }
+    );
+  }
   if (!contrato) return NextResponse.json({ error: "Contrato não encontrado" }, { status: 404 });
   
   // Verifica se o professor já assinou
@@ -48,13 +57,21 @@ export async function POST(
     );
   }
 
-  await prisma.contrato.update({
-    where: { id: contratoId },
-    data: {
-      status: "assinado",
-      assinatura_url: assinaturaUrl ?? undefined,
-      data_assinatura: new Date(),
-    },
-  });
+  try {
+    await prisma.contrato.update({
+      where: { id: contratoId },
+      data: {
+        status: "assinado",
+        assinatura_url: assinaturaUrl ?? undefined,
+        data_assinatura: new Date(),
+      },
+    });
+  } catch (e) {
+    console.error("POST /api/contratos/[id]/assinar (update):", e);
+    return NextResponse.json(
+      { error: "Erro ao salvar assinatura. Verifique a conexão com o banco." },
+      { status: 500 }
+    );
+  }
   return NextResponse.json({ ok: true });
 }

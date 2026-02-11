@@ -15,10 +15,19 @@ export async function POST(
     return NextResponse.json({ error: "ID inválido" }, { status: 400 });
   }
 
-  const contrato = await prisma.contrato.findUnique({
-    where: { id: contratoId },
-    include: { aluno: true, plano: true },
-  });
+  let contrato: Awaited<ReturnType<typeof prisma.contrato.findUnique>>;
+  try {
+    contrato = await prisma.contrato.findUnique({
+      where: { id: contratoId },
+      include: { aluno: true, plano: true },
+    });
+  } catch (e) {
+    console.error("POST /api/contratos/[id]/gerar:", e);
+    return NextResponse.json(
+      { error: "Não foi possível conectar ao banco. Verifique DATABASE_URL." },
+      { status: 500 }
+    );
+  }
   if (!contrato) return NextResponse.json({ error: "Contrato não encontrado" }, { status: 404 });
 
   const contratoParams = {
@@ -48,14 +57,22 @@ export async function POST(
     console.error("Erro ao gerar PDF:", e);
   }
 
-  await prisma.contrato.update({
-    where: { id: contratoId },
-    data: {
-      status: "enviado",
-      link_assinatura: linkAssinatura,
-      pdf_url: pdfUrl ?? undefined,
-    },
-  });
+  try {
+    await prisma.contrato.update({
+      where: { id: contratoId },
+      data: {
+        status: "enviado",
+        link_assinatura: linkAssinatura,
+        pdf_url: pdfUrl ?? undefined,
+      },
+    });
+  } catch (e) {
+    console.error("POST /api/contratos/[id]/gerar (update):", e);
+    return NextResponse.json(
+      { error: "Erro ao atualizar contrato. Verifique a conexão com o banco." },
+      { status: 500 }
+    );
+  }
 
   return NextResponse.json({
     ok: true,

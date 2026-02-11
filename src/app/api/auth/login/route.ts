@@ -24,7 +24,11 @@ export async function POST(request: Request) {
     await createSession({ userId: user.id, email: user.email, tipo: user.tipo });
     return NextResponse.json({ ok: true, user: { id: user.id, nome: user.nome, email: user.email } });
   } catch (e) {
-    console.error(e);
-    return NextResponse.json({ error: "Erro ao fazer login" }, { status: 500 });
+    console.error("POST /api/auth/login:", e);
+    const msg =
+      e && typeof e === "object" && "message" in e && String((e as { message: unknown }).message).toLowerCase().includes("auth")
+        ? "Falha de autenticação no banco. Verifique DATABASE_URL."
+        : "Erro ao fazer login. Verifique a conexão com o banco.";
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

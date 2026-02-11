@@ -13,7 +13,16 @@ export async function POST(
     return NextResponse.json({ error: "ID inválido" }, { status: 400 });
   }
 
-  const contrato = await prisma.contrato.findUnique({ where: { id: contratoId } });
+  let contrato: Awaited<ReturnType<typeof prisma.contrato.findUnique>>;
+  try {
+    contrato = await prisma.contrato.findUnique({ where: { id: contratoId } });
+  } catch (e) {
+    console.error("POST /api/contratos/[id]/assinatura-professor:", e);
+    return NextResponse.json(
+      { error: "Não foi possível conectar ao banco. Verifique DATABASE_URL." },
+      { status: 500 }
+    );
+  }
   if (!contrato) {
     return NextResponse.json({ error: "Contrato não encontrado" }, { status: 404 });
   }
@@ -57,15 +66,22 @@ export async function POST(
     );
   }
 
-  // Atualiza o contrato com a assinatura do professor e muda status para "professor_assinado"
-  await prisma.contrato.update({
-    where: { id: contratoId },
-    data: {
-      assinatura_professor_url: assinaturaUrl,
-      data_assinatura_professor: new Date(),
-      status: "professor_assinado", // Novo status após professor assinar
-    },
-  });
+  try {
+    await prisma.contrato.update({
+      where: { id: contratoId },
+      data: {
+        assinatura_professor_url: assinaturaUrl,
+        data_assinatura_professor: new Date(),
+        status: "professor_assinado",
+      },
+    });
+  } catch (e) {
+    console.error("POST /api/contratos/[id]/assinatura-professor (update):", e);
+    return NextResponse.json(
+      { error: "Erro ao salvar assinatura. Verifique a conexão com o banco." },
+      { status: 500 }
+    );
+  }
 
   return NextResponse.json({ ok: true, assinatura_url: assinaturaUrl });
 }

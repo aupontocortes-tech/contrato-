@@ -10,15 +10,24 @@ export async function GET(
   if (Number.isNaN(contratoId)) {
     return NextResponse.json({ error: "ID inválido" }, { status: 400 });
   }
-  const contrato = await prisma.contrato.findUnique({
-    where: { id: contratoId },
-    select: {
-      id: true,
-      status: true,
-      aluno: { select: { nome_completo: true } },
-      plano: { select: { nome_plano: true } },
-    },
-  });
+  let contrato;
+  try {
+    contrato = await prisma.contrato.findUnique({
+      where: { id: contratoId },
+      select: {
+        id: true,
+        status: true,
+        aluno: { select: { nome_completo: true } },
+        plano: { select: { nome_plano: true } },
+      },
+    });
+  } catch (e) {
+    console.error("GET /api/contratos/[id]/public:", e);
+    return NextResponse.json(
+      { error: "Não foi possível conectar ao banco. Verifique DATABASE_URL." },
+      { status: 500 }
+    );
+  }
   if (!contrato) return NextResponse.json({ error: "Contrato não encontrado" }, { status: 404 });
   return NextResponse.json(contrato);
 }

@@ -9,11 +9,20 @@ const createSchema = z.object({
 });
 
 export async function GET() {
-  const list = await prisma.contrato.findMany({
-    orderBy: { criado_em: "desc" },
-    include: { aluno: true, plano: true },
-  });
-  return NextResponse.json(list);
+  try {
+    const list = await prisma.contrato.findMany({
+      orderBy: { criado_em: "desc" },
+      include: { aluno: true, plano: true },
+    });
+    return NextResponse.json(list);
+  } catch (e) {
+    console.error("GET /api/contratos:", e);
+    const msg =
+      e && typeof e === "object" && "message" in e && String((e as { message: unknown }).message).toLowerCase().includes("auth")
+        ? "Falha de autenticação no banco. Verifique DATABASE_URL (usuário e senha)."
+        : "Não foi possível conectar ao banco. Verifique DATABASE_URL e se o servidor está acessível.";
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {
@@ -46,7 +55,11 @@ export async function POST(request: Request) {
     });
     return NextResponse.json(contrato);
   } catch (e) {
-    console.error(e);
-    return NextResponse.json({ error: "Erro ao criar contrato" }, { status: 500 });
+    console.error("POST /api/contratos:", e);
+    const msg =
+      e && typeof e === "object" && "message" in e && String((e as { message: unknown }).message).toLowerCase().includes("auth")
+        ? "Falha de autenticação no banco. Verifique DATABASE_URL."
+        : "Erro ao criar contrato. Verifique a conexão com o banco.";
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
