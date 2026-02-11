@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Users, FileText, Clock } from "lucide-react";
 
 type Stats = {
   totalAlunos: number;
@@ -20,8 +19,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/alunos").then((r) => r.json()),
-      fetch("/api/contratos").then((r) => r.json()),
+      fetch("/api/alunos").then((r) => r.json()).catch(() => []),
+      fetch("/api/contratos").then((r) => r.json()).catch(() => []),
     ])
       .then(([alunos, contratos]) => {
         const alunosArray = Array.isArray(alunos) ? alunos : [];
@@ -44,44 +43,29 @@ export default function DashboardPage() {
         {/* Cards informativos */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
           <div style={{ border: "1px solid #e5e7eb", borderRadius: "8px", backgroundColor: "#fff", padding: "16px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div>
-                <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "4px" }}>Total de Alunos</p>
-                <p style={{ fontSize: "24px", fontWeight: 700, color: "#111827" }}>
-                  {loading ? "..." : stats.totalAlunos}
-                </p>
-              </div>
-              <div style={{ padding: "8px", backgroundColor: "#eff6ff", borderRadius: "8px" }}>
-                <Users style={{ width: "20px", height: "20px", color: "#2563eb" }} />
-              </div>
+            <div>
+              <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "4px" }}>Total de Alunos</p>
+              <p style={{ fontSize: "24px", fontWeight: 700, color: "#111827" }}>
+                {loading ? "..." : stats.totalAlunos}
+              </p>
             </div>
           </div>
 
           <div style={{ border: "1px solid #e5e7eb", borderRadius: "8px", backgroundColor: "#fff", padding: "16px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div>
-                <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "4px" }}>Contratos Ativos</p>
-                <p style={{ fontSize: "24px", fontWeight: 700, color: "#111827" }}>
-                  {loading ? "..." : stats.contratosAtivos}
-                </p>
-              </div>
-              <div style={{ padding: "8px", backgroundColor: "#f0fdf4", borderRadius: "8px" }}>
-                <FileText style={{ width: "20px", height: "20px", color: "#16a34a" }} />
-              </div>
+            <div>
+              <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "4px" }}>Contratos Ativos</p>
+              <p style={{ fontSize: "24px", fontWeight: 700, color: "#111827" }}>
+                {loading ? "..." : stats.contratosAtivos}
+              </p>
             </div>
           </div>
 
           <div style={{ border: "1px solid #e5e7eb", borderRadius: "8px", backgroundColor: "#fff", padding: "16px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div>
-                <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "4px" }}>Pendentes</p>
-                <p style={{ fontSize: "24px", fontWeight: 700, color: "#111827" }}>
-                  {loading ? "..." : stats.contratosPendentes}
-                </p>
-              </div>
-              <div style={{ padding: "8px", backgroundColor: "#fffbeb", borderRadius: "8px" }}>
-                <Clock style={{ width: "20px", height: "20px", color: "#ea580c" }} />
-              </div>
+            <div>
+              <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "4px" }}>Pendentes</p>
+              <p style={{ fontSize: "24px", fontWeight: 700, color: "#111827" }}>
+                {loading ? "..." : stats.contratosPendentes}
+              </p>
             </div>
           </div>
         </div>
