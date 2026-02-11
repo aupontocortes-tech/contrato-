@@ -40,9 +40,11 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <div className="space-y-6">
-      {/* Cards informativos */}
-      <div className="grid gap-4 sm:grid-cols-3">
+    <div style={{ padding: "24px" }}>
+      <h1 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px", color: "#111827" }}>Dashboard</h1>
+      <div className="space-y-6">
+        {/* Cards informativos */}
+        <div className="grid gap-4 sm:grid-cols-3">
         <Card className="border border-gray-200 bg-white">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -99,6 +101,7 @@ export default function DashboardPage() {
             Criar novo contrato
           </Button>
         </Link>
+      </div>
       </div>
     </div>
   );

@@ -1,6 +1,5 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
-import { Slot } from "radix-ui"
 
 import { cn } from "@/lib/utils"
 
@@ -48,7 +47,8 @@ function Button({
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
   }) {
-  const Comp = asChild ? Slot.Root : "button"
+  // Se asChild for true, renderiza como span para permitir composição
+  const Comp = asChild ? "span" : "button"
 
   return (
     <Comp
@@ -56,7 +56,8 @@ function Button({
       data-variant={variant}
       data-size={size}
       className={cn(buttonVariants({ variant, size, className }))}
-      {...props}
+      {...(asChild ? {} : props)}
+      {...(asChild && props.children ? { children: props.children } : {})}
     />
   )
 }
