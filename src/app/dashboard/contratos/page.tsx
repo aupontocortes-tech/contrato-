@@ -57,6 +57,10 @@ export default function ContratosPage() {
   const [showForm, setShowForm] = useState(true);
   const [modalAssinaturaOpen, setModalAssinaturaOpen] = useState(false);
   const [contratoParaAssinar, setContratoParaAssinar] = useState<number | null>(null);
+  const [modalExcluirOpen, setModalExcluirOpen] = useState(false);
+  const [contratoParaExcluir, setContratoParaExcluir] = useState<number | null>(null);
+  const [codigoExcluir, setCodigoExcluir] = useState("");
+  const [excluindo, setExcluindo] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -403,6 +407,17 @@ export default function ContratosPage() {
                           {c.link_assinatura ? "Assinar" : "Aguardando geração"}
                         </button>
                       )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setContratoParaExcluir(c.id);
+                          setCodigoExcluir("");
+                          setModalExcluirOpen(true);
+                        }}
+                        style={{ ...btnSecondary, color: "#b91c1c", borderColor: "#b91c1c" }}
+                      >
+                        Excluir
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -422,6 +437,100 @@ export default function ContratosPage() {
             setContratoParaAssinar(null);
           }}
         />
+      )}
+
+      {modalExcluirOpen && contratoParaExcluir !== null && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 100,
+          }}
+          onClick={() => setModalExcluirOpen(false)}
+        >
+          <div
+            style={{
+              backgroundColor: "#fff",
+              padding: "24px",
+              borderRadius: "8px",
+              maxWidth: "360px",
+              width: "90%",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: "0 0 8px", fontSize: "18px", fontWeight: 600, color: "#111827" }}>
+              Excluir contrato
+            </h3>
+            <p style={{ margin: "0 0 16px", fontSize: "14px", color: "#6b7280" }}>
+              Digite o código de confirmação 1234 para excluir este contrato.
+            </p>
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="Código"
+              value={codigoExcluir}
+              onChange={(e) => setCodigoExcluir(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: "6px",
+                border: "1px solid #d1d5db",
+                fontSize: "16px",
+                marginBottom: "16px",
+                boxSizing: "border-box",
+              }}
+            />
+            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setModalExcluirOpen(false);
+                  setContratoParaExcluir(null);
+                  setCodigoExcluir("");
+                }}
+                style={btnSecondary}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={excluindo || !codigoExcluir.trim()}
+                onClick={async () => {
+                  setExcluindo(true);
+                  try {
+                    const res = await fetch(`/api/contratos/${contratoParaExcluir}/excluir`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ codigo: codigoExcluir.trim() }),
+                    });
+                    const data = await res.json();
+                    if (res.ok && data.ok) {
+                      toast.success("Contrato excluído.");
+                      setModalExcluirOpen(false);
+                      setContratoParaExcluir(null);
+                      setCodigoExcluir("");
+                      load();
+                    } else {
+                      toast.error(data.error || "Código incorreto.");
+                    }
+                  } catch {
+                    toast.error("Erro ao excluir.");
+                  } finally {
+                    setExcluindo(false);
+                  }
+                }}
+                style={{ ...btnPrimary, backgroundColor: "#b91c1c" }}
+              >
+                {excluindo ? "Excluindo..." : "Confirmar exclusão"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <p style={{ marginTop: "24px", fontSize: "12px", color: "#9ca3af" }}>
