@@ -4,16 +4,11 @@ import type { NextRequest } from "next/server";
 export function proxy(request: NextRequest) {
   // Redireciona a raiz na borda (Edge), sem acionar layout/página Node
   if (request.nextUrl.pathname === "/") {
-    return NextResponse.redirect(new URL("/dashboard", request.url), 307);
+    const dashboardUrl = new URL("/dashboard", request.url);
+    return NextResponse.redirect(dashboardUrl, 307);
   }
   
-  const response = NextResponse.next();
-
-  // Security headers (mínimos para não quebrar o site)
-  response.headers.set("X-Content-Type-Options", "nosniff");
-  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-
-  return response;
+  return NextResponse.next();
 }
 
 export const config = {
