@@ -354,10 +354,20 @@ export default function ContratosPage() {
                         )}
                         {podeCopiarLink && (
                           <>
-                            <button type="button" onClick={() => copyLink(c.link_assinatura!)} style={btnSecondary}>
+                            <button
+                              type="button"
+                              onClick={() => copyLink(`${typeof window !== "undefined" ? window.location.origin : ""}/assinar/${c.id}`)}
+                              style={btnSecondary}
+                            >
                               Copiar link
                             </button>
-                            <button type="button" onClick={() => copyWhatsAppLink(c.link_assinatura!)} style={btnSecondary}>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                copyWhatsAppLink(`${typeof window !== "undefined" ? window.location.origin : ""}/assinar/${c.id}`)
+                              }
+                              style={btnSecondary}
+                            >
                               Enviar WhatsApp
                             </button>
                           </>

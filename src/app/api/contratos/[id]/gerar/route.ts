@@ -9,7 +9,7 @@ import { gerarPdfFromContrato } from "@/lib/gerar-pdf";
 type ContratoComAlunoPlano = Prisma.ContratoGetPayload<{ include: { aluno: true; plano: true } }>;
 
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
@@ -45,7 +45,16 @@ export async function POST(
   };
   const contratoEstruturado = getContratoEstruturado(contratoParams);
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  // Usar a origem da requisição para o link (na Vercel será a URL de produção)
+  let baseUrl = process.env.NEXT_PUBLIC_APP_URL || "";
+  if (!baseUrl && request.url) {
+    try {
+      baseUrl = new URL(request.url).origin;
+    } catch {
+      baseUrl = "";
+    }
+  }
+  if (!baseUrl) baseUrl = "http://localhost:3000";
   const linkAssinatura = `${baseUrl}/assinar/${contratoId}`;
 
   let pdfUrl: string | null = null;
