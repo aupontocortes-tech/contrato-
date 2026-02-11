@@ -4,6 +4,29 @@ Este guia vai resolver o problema de conexão do banco na Vercel passo a passo.
 
 ---
 
+## 🟢 Site abre, mas aparece "verificar banco" ou "Não foi possível carregar..."
+
+Isso significa que a **DATABASE_URL na Vercel** não está correta ou não está sendo usada no deploy.
+
+1. **Vercel → Settings → Environment Variables**  
+   Confirme que existe **DATABASE_URL** e que está marcada para **Production** (e Preview, se quiser).
+
+2. **Use a URL do Session pooler (recomendado para Vercel)**  
+   No Supabase: **Project Settings → Database → Connection string → URI**  
+   Selecione **"Session"** (porta 5432), não "Direct".  
+   A URL será parecida com:  
+   `postgresql://postgres.PROJECT_REF:SENHA@aws-0-REGIAO.pooler.supabase.com:5432/postgres`  
+   Adicione no final: `?sslmode=require`  
+   Cole esse valor em **Value** da DATABASE_URL na Vercel.
+
+3. **Redeploy obrigatório**  
+   Depois de salvar a variável: **Deployments → ⋯ no último deploy → Redeploy**.  
+   Variáveis novas só valem em deploys feitos **depois** de salvar.
+
+4. Se ainda falhar: confira no Supabase se o projeto está **Active** (não pausado) e se a senha está correta.
+
+---
+
 ## ⚠️ PROBLEMA (RESOLVIDO NO BUILD)
 
 O erro que aparecia durante o **build** na Vercel:
