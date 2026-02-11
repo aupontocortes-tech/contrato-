@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import path from "path";
 import fs from "fs/promises";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getContratoEstruturado } from "@/lib/contrato-template";
 import { gerarPdfFromContrato } from "@/lib/gerar-pdf";
+
+type ContratoComAlunoPlano = Prisma.ContratoGetPayload<{ include: { aluno: true; plano: true } }>;
 
 export async function POST(
   _request: Request,
@@ -15,7 +18,7 @@ export async function POST(
     return NextResponse.json({ error: "ID inválido" }, { status: 400 });
   }
 
-  let contrato: Awaited<ReturnType<typeof prisma.contrato.findUnique>>;
+  let contrato: ContratoComAlunoPlano | null = null;
   try {
     contrato = await prisma.contrato.findUnique({
       where: { id: contratoId },
