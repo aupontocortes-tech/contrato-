@@ -44,8 +44,15 @@ export async function POST(request: Request) {
     });
     return NextResponse.json(aluno);
   } catch (e: unknown) {
+    console.error("POST /api/alunos:", e);
     const code = e && typeof e === "object" && "code" in e ? (e as { code: string }).code : null;
-    const msg = code === "P2002" ? "CPF ou e-mail já cadastrado." : "Erro ao criar aluno. Tente novamente.";
-    return NextResponse.json({ error: msg }, { status: 400 });
+    if (code === "P2002") {
+      return NextResponse.json({ error: "CPF ou e-mail já cadastrado." }, { status: 400 });
+    }
+    // Erro de conexão ou outro erro de servidor
+    return NextResponse.json(
+      { error: "Erro ao cadastrar. Verifique a conexão com o banco e tente novamente." },
+      { status: 500 }
+    );
   }
 }

@@ -34,19 +34,25 @@ export default function AssinarPage() {
   const [contrato, setContrato] = useState<Contrato | null>(null);
   const [conteudo, setConteudo] = useState<ContratoEstruturado | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [assinando, setAssinando] = useState(false);
   const [desenhou, setDesenhou] = useState(false);
   const desenhandoRef = useRef(false);
 
   useEffect(() => {
     if (!id) return;
+    setLoadError(null);
     fetch(`/api/contratos/${id}/public-conteudo`)
-      .then((r) => r.json())
-      .then((data) => {
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok) {
+          setLoadError(data?.error || "Erro ao carregar contrato.");
+          return;
+        }
         if (data.contrato) setContrato(data.contrato);
         if (data.conteudo) setConteudo(data.conteudo);
       })
-      .catch(() => {})
+      .catch(() => setLoadError("Erro de conexão. Verifique o link e tente novamente."))
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -175,6 +181,16 @@ export default function AssinarPage() {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-muted/30">
         <p className="text-muted-foreground">Carregando contrato...</p>
+      </div>
+    );
+  }
+  if (loadError) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-muted/30 gap-4">
+        <p className="text-destructive font-medium text-center">{loadError}</p>
+        <Button variant="outline" onClick={() => window.location.reload()}>
+          Tente novamente
+        </Button>
       </div>
     );
   }
