@@ -4,6 +4,12 @@ Este guia vai resolver o problema de conexão do banco na Vercel passo a passo.
 
 ---
 
+## 🔗 Link para o aluno não abre o contrato / "Serviço temporariamente indisponível"
+
+Se o link que você envia para o aluno (ex.: `contrato-six.vercel.app/assinar/1`) não carrega o contrato e mostra mensagem de indisponibilidade, **a DATABASE_URL não está configurada ou está incorreta na Vercel**. Siga os passos abaixo. Depois de configurar, faça **Redeploy** e teste de novo. Você pode verificar se o banco está ok acessando: `https://seu-app.vercel.app/api/health` — deve aparecer `"database_connection": true`.
+
+---
+
 ## 🟢 Site abre, mas aparece "verificar banco" ou "Não foi possível carregar..."
 
 Isso significa que a **DATABASE_URL na Vercel** não está correta ou não está sendo usada no deploy.

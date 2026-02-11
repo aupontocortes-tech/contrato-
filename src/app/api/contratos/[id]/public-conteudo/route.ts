@@ -22,8 +22,8 @@ export async function GET(
   } catch (e) {
     console.error("GET /api/contratos/[id]/public-conteudo:", e);
     return NextResponse.json(
-      { error: "Não foi possível conectar ao banco. Verifique DATABASE_URL." },
-      { status: 500 }
+      { error: "Serviço temporariamente indisponível. Tente novamente em alguns minutos." },
+      { status: 503 }
     );
   }
   if (!contrato) return NextResponse.json({ error: "Contrato não encontrado" }, { status: 404 });

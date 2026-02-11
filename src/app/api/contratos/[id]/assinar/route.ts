@@ -18,8 +18,8 @@ export async function POST(
   } catch (e) {
     console.error("POST /api/contratos/[id]/assinar:", e);
     return NextResponse.json(
-      { error: "Não foi possível conectar ao banco. Verifique DATABASE_URL." },
-      { status: 500 }
+      { error: "Serviço temporariamente indisponível. Tente novamente em alguns minutos." },
+      { status: 503 }
     );
   }
   if (!contrato) return NextResponse.json({ error: "Contrato não encontrado" }, { status: 404 });
@@ -69,8 +69,8 @@ export async function POST(
   } catch (e) {
     console.error("POST /api/contratos/[id]/assinar (update):", e);
     return NextResponse.json(
-      { error: "Erro ao salvar assinatura. Verifique a conexão com o banco." },
-      { status: 500 }
+      { error: "Não foi possível salvar a assinatura. Tente novamente em alguns minutos." },
+      { status: 503 }
     );
   }
   return NextResponse.json({ ok: true });

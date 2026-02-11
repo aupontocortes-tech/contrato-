@@ -46,7 +46,12 @@ export default function AssinarPage() {
       .then(async (r) => {
         const data = await r.json();
         if (!r.ok) {
-          setLoadError(data?.error || "Erro ao carregar contrato.");
+          const msg = data?.error || "Erro ao carregar contrato.";
+          const friendly =
+            typeof msg === "string" && (msg.includes("DATABASE") || msg.includes("banco"))
+              ? "O contrato não pôde ser carregado no momento. Tente novamente em alguns minutos ou avise seu professor."
+              : msg;
+          setLoadError(friendly);
           return;
         }
         if (data.contrato) setContrato(data.contrato);
