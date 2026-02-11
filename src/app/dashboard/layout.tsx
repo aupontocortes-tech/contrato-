@@ -2,96 +2,177 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { MobileMenu } from "@/components/mobile-menu";
-import { InstallPrompt } from "@/components/install-prompt";
+import { useState } from "react";
+
+const linkStyle = (active: boolean) => ({
+  display: "block",
+  width: "100%",
+  padding: "8px 12px",
+  textAlign: "left" as const,
+  fontSize: "14px",
+  fontWeight: 500,
+  color: active ? "#1d4ed8" : "#374151",
+  backgroundColor: active ? "#eff6ff" : "transparent",
+  border: "none",
+  borderLeft: active ? "2px solid #3b82f6" : "2px solid transparent",
+  cursor: "pointer",
+  textDecoration: "none",
+  borderRadius: "4px",
+});
 
 export default function DashboardLayout({
   children,
 }: { children: React.ReactNode }) {
   const pathname = usePathname();
-
-  const isActive = (path: string) => pathname === path;
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
-      <div className="flex flex-1 flex-col lg:flex-row">
-        {/* Mobile Header com Menu */}
-        <header className="lg:hidden flex items-center justify-between p-3 border-b bg-white sticky top-0 z-30 shadow-sm">
-          <span className="font-semibold text-base text-gray-800">Menu</span>
-          <MobileMenu />
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", backgroundColor: "#fff" }}>
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media (min-width: 1024px) {
+          .dash-mobile { display: none !important; }
+          .dash-desktop { display: flex !important; }
+        }
+        @media (max-width: 1023px) {
+          .dash-desktop { display: none !important; }
+        }
+      ` }} />
+      <div style={{ display: "flex", flex: 1, flexDirection: "column" }}>
+        {/* Mobile Header */}
+        <header
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "12px 16px",
+            borderBottom: "1px solid #e5e7eb",
+            backgroundColor: "#fff",
+            position: "sticky",
+            top: 0,
+            zIndex: 30,
+          }}
+          className="dash-mobile"
+        >
+          <span style={{ fontWeight: 600, fontSize: "16px", color: "#1f2937" }}>Menu</span>
+          <button
+            type="button"
+            onClick={() => setMenuOpen(!menuOpen)}
+            style={{
+              padding: "8px",
+              border: "1px solid #e5e7eb",
+              borderRadius: "6px",
+              background: "#fff",
+              cursor: "pointer",
+            }}
+            aria-label="Abrir menu"
+          >
+            <span style={{ fontSize: "18px" }}>☰</span>
+          </button>
         </header>
 
-        {/* Desktop Sidebar - Menu lateral fixo */}
-        <aside className="hidden lg:flex w-56 border-r bg-white flex-col shadow-sm">
-          {/* Título Menu */}
-          <div className="px-4 py-4 border-b border-gray-200">
-            <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Menu</h2>
+        {menuOpen && (
+          <div
+            className="dash-mobile"
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0,0,0,0.5)",
+              zIndex: 40,
+            }}
+            onClick={() => setMenuOpen(false)}
+          />
+        )}
+        <aside
+          className="dash-mobile"
+          style={{
+            display: menuOpen ? "block" : "none",
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "260px",
+            height: "100%",
+            backgroundColor: "#fff",
+            borderRight: "1px solid #e5e7eb",
+            zIndex: 50,
+            padding: "16px",
+            boxShadow: "4px 0 12px rgba(0,0,0,0.1)",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+            <strong style={{ fontSize: "12px", color: "#374151", textTransform: "uppercase" }}>Menu</strong>
+            <button
+              type="button"
+              onClick={() => setMenuOpen(false)}
+              style={{ padding: "4px", border: "none", background: "none", cursor: "pointer", fontSize: "18px" }}
+            >
+              ✕
+            </button>
           </div>
-          
-          {/* Navegação */}
-          <nav className="flex flex-col gap-0.5 p-2 flex-1">
-            <Link href="/dashboard">
-              <Button 
-                variant="ghost" 
-                className={`w-full justify-start font-medium text-sm h-9 px-3 ${
-                  isActive("/dashboard") && pathname === "/dashboard"
-                    ? "bg-blue-50 text-blue-700 border-l-2 border-blue-500 font-semibold"
-                    : "hover:bg-gray-50 text-gray-700"
-                }`}
-              >
-                Dashboard
-              </Button>
+          <nav style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            <Link href="/dashboard" onClick={() => setMenuOpen(false)} style={linkStyle(pathname === "/dashboard")}>
+              Dashboard
             </Link>
-            <Link href="/dashboard/alunos">
-              <Button 
-                variant="ghost" 
-                className={`w-full justify-start font-medium text-sm h-9 px-3 ${
-                  isActive("/dashboard/alunos")
-                    ? "bg-blue-50 text-blue-700 border-l-2 border-blue-500 font-semibold"
-                    : "hover:bg-gray-50 text-gray-700"
-                }`}
-              >
-                Alunos
-              </Button>
+            <Link href="/dashboard/alunos" onClick={() => setMenuOpen(false)} style={linkStyle(pathname === "/dashboard/alunos")}>
+              Alunos
             </Link>
-            <Link href="/dashboard/planos">
-              <Button 
-                variant="ghost" 
-                className={`w-full justify-start font-medium text-sm h-9 px-3 ${
-                  isActive("/dashboard/planos")
-                    ? "bg-blue-50 text-blue-700 border-l-2 border-blue-500 font-semibold"
-                    : "hover:bg-gray-50 text-gray-700"
-                }`}
-              >
-                Planos
-              </Button>
+            <Link href="/dashboard/planos" onClick={() => setMenuOpen(false)} style={linkStyle(pathname === "/dashboard/planos")}>
+              Planos
             </Link>
-            <Link href="/dashboard/contratos">
-              <Button 
-                variant="ghost" 
-                className={`w-full justify-start font-medium text-sm h-9 px-3 ${
-                  isActive("/dashboard/contratos")
-                    ? "bg-blue-50 text-blue-700 border-l-2 border-blue-500 font-semibold"
-                    : "hover:bg-gray-50 text-gray-700"
-                }`}
-              >
-                Contratos
-              </Button>
+            <Link href="/dashboard/contratos" onClick={() => setMenuOpen(false)} style={linkStyle(pathname === "/dashboard/contratos")}>
+              Contratos
             </Link>
           </nav>
         </aside>
 
-        {/* Main Content */}
-        <main className="flex-1 p-6 lg:p-8 overflow-auto bg-white min-h-screen">
-          <div className="max-w-6xl mx-auto">
-            {children}
+        {/* Desktop Sidebar */}
+        <aside
+          className="dash-desktop"
+          style={{
+            display: "none",
+            width: "224px",
+            borderRight: "1px solid #e5e7eb",
+            backgroundColor: "#fff",
+            flexDirection: "column",
+            padding: "16px",
+          }}
+        >
+          <div style={{ padding: "16px", borderBottom: "1px solid #e5e7eb", marginBottom: "8px" }}>
+            <h2 style={{ fontSize: "12px", fontWeight: 600, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              Menu
+            </h2>
           </div>
+          <nav style={{ display: "flex", flexDirection: "column", gap: "4px", flex: 1 }}>
+            <Link href="/dashboard" style={linkStyle(pathname === "/dashboard")}>
+              Dashboard
+            </Link>
+            <Link href="/dashboard/alunos" style={linkStyle(pathname === "/dashboard/alunos")}>
+              Alunos
+            </Link>
+            <Link href="/dashboard/planos" style={linkStyle(pathname === "/dashboard/planos")}>
+              Planos
+            </Link>
+            <Link href="/dashboard/contratos" style={linkStyle(pathname === "/dashboard/contratos")}>
+              Contratos
+            </Link>
+          </nav>
+        </aside>
+
+        {/* Main */}
+        <main
+          style={{
+            flex: 1,
+            padding: "24px",
+            overflow: "auto",
+            backgroundColor: "#fff",
+            minHeight: "100vh",
+          }}
+        >
+          <div style={{ maxWidth: "1152px", margin: "0 auto" }}>{children}</div>
         </main>
       </div>
-
-      {/* Install Prompt */}
-      <InstallPrompt />
     </div>
   );
 }

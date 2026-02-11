@@ -21,10 +21,17 @@ export default function AlunosPage() {
   const [modalOpen, setModalOpen] = useState(false);
 
   function loadAlunos() {
+    setLoading(true);
     fetch("/api/alunos")
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data)) setAlunos(data);
+      .then((r) => r.json().then((data) => ({ ok: r.ok, data })))
+      .then(({ ok, data }) => {
+        if (ok && Array.isArray(data)) {
+          setAlunos(data);
+        } else if (!ok && data && typeof data.error === "string") {
+          toast.error(data.error);
+        } else {
+          toast.error("Erro ao carregar alunos");
+        }
       })
       .catch(() => toast.error("Erro ao carregar alunos"))
       .finally(() => setLoading(false));

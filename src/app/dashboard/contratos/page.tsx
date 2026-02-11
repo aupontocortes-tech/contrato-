@@ -1,19 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { toast } from "sonner";
-import { Copy, Download, FileCheck, Clock, Eye, PenTool } from "lucide-react";
-import { AssinaturaProfessorModal } from "@/components/assinatura-professor-modal";
+
+const AssinaturaProfessorModal = dynamic(
+  () => import("@/components/assinatura-professor-modal").then((m) => ({ default: m.AssinaturaProfessorModal })),
+  { ssr: false }
+);
 
 type Aluno = { id: number; nome_completo: string; cpf: string; email: string };
 type Plano = { id: number; nome_plano: string; duracao_dias: number };
@@ -30,11 +25,31 @@ type Contrato = {
   plano: Plano;
 };
 
+type ScreenState = "loading" | "error" | "empty" | "success";
+
+function isContratoList(value: unknown): value is Contrato[] {
+  return Array.isArray(value) && value.every((item) => item != null && typeof item.id === "number");
+}
+function isAlunoList(value: unknown): value is Aluno[] {
+  return Array.isArray(value) && value.every((item) => item != null && typeof item.id === "number");
+}
+function isPlanoList(value: unknown): value is Plano[] {
+  return Array.isArray(value) && value.every((item) => item != null && typeof item.id === "number");
+}
+
+const btnPrimary = { padding: "8px 16px", borderRadius: "6px", border: "none", backgroundColor: "#2563eb", color: "#fff", fontWeight: 500, cursor: "pointer", fontSize: "14px" };
+const btnSecondary = { padding: "8px 16px", borderRadius: "6px", border: "1px solid #d1d5db", backgroundColor: "#fff", color: "#374151", fontWeight: 500, cursor: "pointer", fontSize: "14px" };
+const inputSelect = { padding: "8px 12px", borderRadius: "6px", border: "1px solid #d1d5db", backgroundColor: "#fff", fontSize: "14px", minWidth: "200px", width: "100%" };
+const card = { backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px", padding: "20px", marginBottom: "16px", boxShadow: "0 1px 3px rgba(0,0,0,0.08)" };
+
 export default function ContratosPage() {
   const [contratos, setContratos] = useState<Contrato[]>([]);
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [planos, setPlanos] = useState<Plano[]>([]);
   const [loading, setLoading] = useState(true);
+  const [errorContratos, setErrorContratos] = useState<string | null>(null);
+  const [errorAlunos, setErrorAlunos] = useState<string | null>(null);
+  const [errorPlanos, setErrorPlanos] = useState<string | null>(null);
   const [alunoId, setAlunoId] = useState<string>("");
   const [planoId, setPlanoId] = useState<string>("");
   const [creating, setCreating] = useState(false);
@@ -43,24 +58,82 @@ export default function ContratosPage() {
   const [modalAssinaturaOpen, setModalAssinaturaOpen] = useState(false);
   const [contratoParaAssinar, setContratoParaAssinar] = useState<number | null>(null);
 
-  function load() {
-    Promise.all([
-      fetch("/api/contratos").then((r) => r.json()),
-      fetch("/api/alunos").then((r) => r.json()),
-      fetch("/api/planos").then((r) => r.json()),
-    ])
-      .then(([c, a, p]) => {
-        if (Array.isArray(c)) setContratos(c);
-        if (Array.isArray(a)) setAlunos(a);
-        if (Array.isArray(p)) setPlanos(p);
-      })
-      .catch(() => toast.error("Erro ao carregar dados"))
-      .finally(() => setLoading(false));
-  }
+  const load = useCallback(async () => {
+    setLoading(true);
+    setErrorContratos(null);
+    setErrorAlunos(null);
+    setErrorPlanos(null);
+
+    const fetchContratos = async (): Promise<Contrato[]> => {
+      try {
+        const res = await fetch("/api/contratos");
+        const data = await res.json();
+        if (!res.ok) {
+          setErrorContratos("Não foi possível carregar os contratos.");
+          return [];
+        }
+        if (isContratoList(data)) return data;
+        setErrorContratos("Resposta inválida dos contratos.");
+        return [];
+      } catch {
+        setErrorContratos("Não foi possível carregar os contratos.");
+        return [];
+      }
+    };
+    const fetchAlunos = async (): Promise<Aluno[]> => {
+      try {
+        const res = await fetch("/api/alunos");
+        const data = await res.json();
+        if (!res.ok) {
+          setErrorAlunos("Não foi possível carregar os alunos.");
+          return [];
+        }
+        if (isAlunoList(data)) return data;
+        setErrorAlunos("Resposta inválida dos alunos.");
+        return [];
+      } catch {
+        setErrorAlunos("Não foi possível carregar os alunos.");
+        return [];
+      }
+    };
+    const fetchPlanos = async (): Promise<Plano[]> => {
+      try {
+        const res = await fetch("/api/planos");
+        const data = await res.json();
+        if (!res.ok) {
+          setErrorPlanos("Não foi possível carregar os planos.");
+          return [];
+        }
+        if (isPlanoList(data)) return data;
+        setErrorPlanos("Resposta inválida dos planos.");
+        return [];
+      } catch {
+        setErrorPlanos("Não foi possível carregar os planos.");
+        return [];
+      }
+    };
+
+    const [c, a, p] = await Promise.all([fetchContratos(), fetchAlunos(), fetchPlanos()]);
+    setContratos(c);
+    setAlunos(a);
+    setPlanos(p);
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
+
+  const screenState: ScreenState = loading
+    ? "loading"
+    : errorContratos
+      ? "error"
+      : contratos.length === 0
+        ? "empty"
+        : "success";
+
+  const canCreateContract = !errorAlunos && !errorPlanos && alunos.length > 0 && planos.length > 0;
+  const loadingOrErrorAlunosPlanos = errorAlunos != null || errorPlanos != null;
 
   async function handleNovoContrato(e: React.FormEvent) {
     e.preventDefault();
@@ -73,10 +146,7 @@ export default function ContratosPage() {
       const res = await fetch("/api/contratos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          aluno_id: Number(alunoId),
-          plano_id: Number(planoId),
-        }),
+        body: JSON.stringify({ aluno_id: Number(alunoId), plano_id: Number(planoId) }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -86,7 +156,7 @@ export default function ContratosPage() {
       toast.success("Contrato criado!");
       setAlunoId("");
       setPlanoId("");
-      setShowForm(false); // Oculta o formulário após criar
+      setShowForm(false);
       load();
     } catch {
       toast.error("Erro de conexão");
@@ -107,7 +177,7 @@ export default function ContratosPage() {
       toast.success("Contrato gerado! PDF e link disponíveis.");
       if (data.link_assinatura) {
         await navigator.clipboard.writeText(data.link_assinatura);
-        toast.success("Link copiado para a área de transferência.");
+        toast.success("Link copiado.");
       }
       load();
     } catch {
@@ -122,248 +192,238 @@ export default function ContratosPage() {
   }
 
   function copyWhatsAppLink(link: string) {
-    const whatsappLink = `https://wa.me/?text=${encodeURIComponent(link)}`;
-    window.open(whatsappLink, "_blank");
+    window.open(`https://wa.me/?text=${encodeURIComponent(link)}`, "_blank");
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-gray-900">Contratos</h1>
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      <div
+        style={{
+          padding: "10px 16px",
+          backgroundColor: "#dcfce7",
+          border: "1px solid #22c55e",
+          borderRadius: "8px",
+          fontSize: "14px",
+          color: "#166534",
+        }}
+      >
+        <strong>Interface nova.</strong> Se você vê esta faixa verde, a página está atualizada. Se não vê, faça um reload forçado (Ctrl+Shift+R) ou abra em aba anônima.
+      </div>
+      <h1 style={{ fontSize: "24px", fontWeight: 600, color: "#111827" }}>Contratos</h1>
 
-      {/* Formulário de criar contrato - aparece apenas se showForm for true */}
+      {!loading && loadingOrErrorAlunosPlanos && (
+        <div style={{ ...card, backgroundColor: "#fffbeb", borderColor: "#fcd34d" }}>
+          <p style={{ fontSize: "14px", color: "#92400e" }}>
+            {errorAlunos && errorPlanos
+              ? "Não foi possível carregar alunos e planos. Não é possível criar novo contrato."
+              : errorAlunos
+                ? "Não foi possível carregar os alunos. Crie um aluno primeiro ou tente recarregar."
+                : "Não foi possível carregar os planos. Cadastre planos ou tente recarregar."}
+          </p>
+        </div>
+      )}
+
       {showForm && (
-        <Card className="border border-gray-200 bg-white shadow-sm">
-          <CardContent className="p-5">
-            <form onSubmit={handleNovoContrato} className="flex flex-wrap items-end gap-4">
-              <div className="space-y-2 flex-1 min-w-[200px]">
-                <label className="text-sm font-medium text-gray-700">Aluno</label>
-                <Select value={alunoId} onValueChange={setAlunoId} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o aluno" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {alunos.map((a) => (
-                      <SelectItem key={a.id} value={String(a.id)}>
-                        {a.nome_completo}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2 flex-1 min-w-[200px]">
-                <label className="text-sm font-medium text-gray-700">Plano</label>
-                <Select value={planoId} onValueChange={setPlanoId} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o plano" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {planos.map((p) => (
-                      <SelectItem key={p.id} value={String(p.id)}>
-                        {p.nome_plano} ({p.duracao_dias} dias)
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex gap-2">
-                <Button type="submit" disabled={creating} className="bg-blue-600 hover:bg-blue-700">
-                  {creating ? "Criando..." : "Criar contrato"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowForm(false)}
-                >
-                  Cancelar
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Botão para mostrar formulário novamente */}
-      {!showForm && (
-        <Button
-          onClick={() => setShowForm(true)}
-          variant="outline"
-          className="bg-white"
-        >
-          + Criar novo contrato
-        </Button>
-      )}
-
-      {/* Lista de contratos - elemento principal */}
-      <Card className="border border-gray-200 bg-white shadow-sm">
-        <CardContent className="p-0">
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <p className="text-gray-500">Carregando...</p>
-            </div>
-          ) : contratos.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <p className="text-gray-600 mb-2">Nenhum contrato cadastrado.</p>
-              <Button
-                variant="outline"
-                onClick={() => setShowForm(true)}
-                className="mt-2"
+        <div style={card}>
+          <form
+            onSubmit={handleNovoContrato}
+            style={{ display: "flex", flexWrap: "wrap", gap: "16px", alignItems: "flex-end" }}
+          >
+            <div style={{ flex: "1 1 200px" }}>
+              <label style={{ display: "block", fontSize: "14px", fontWeight: 500, color: "#374151", marginBottom: "4px" }}>
+                Aluno
+              </label>
+              <select
+                value={alunoId}
+                onChange={(e) => setAlunoId(e.target.value)}
+                required
+                disabled={!!errorAlunos}
+                style={inputSelect}
               >
-                Criar primeiro contrato
-              </Button>
+                <option value="">Selecione o aluno</option>
+                {alunos.map((a) => (
+                  <option key={a.id} value={String(a.id)}>
+                    {a.nome_completo}
+                  </option>
+                ))}
+              </select>
             </div>
-          ) : (
-            <div className="divide-y divide-gray-200">
-              {contratos.map((c) => {
-                const assinado = c.status === "assinado";
-                const professorAssinou = c.assinatura_professor_url !== null || c.status === "professor_assinado" || c.status === "assinado";
-                const podeCopiarLink = professorAssinou && c.link_assinatura;
-                
-                return (
-                  <div
-                    key={c.id}
-                    className="p-5 hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex flex-col gap-4">
-                      {/* Linha principal: Informações e ações */}
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        {/* Informações do contrato */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap mb-2">
-                            <span className="font-semibold text-gray-900">
-                              {c.aluno.nome_completo}
-                            </span>
-                            <span className="text-gray-400">·</span>
-                            <span className="text-gray-600 capitalize">
-                              {c.plano.nome_plano.replace(/_/g, " ")}
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-600 mb-2">
-                            {new Date(c.data_inicio).toLocaleDateString("pt-BR")} a{" "}
-                            {new Date(c.data_fim).toLocaleDateString("pt-BR")}
-                          </p>
-                          <div className="flex items-center gap-2">
-                            {assinado ? (
-                              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-700 bg-green-50 px-2.5 py-1 rounded">
-                                <FileCheck className="h-3.5 w-3.5" />
-                                Assinado
-                              </span>
-                            ) : professorAssinou ? (
-                              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-700 bg-blue-50 px-2.5 py-1 rounded">
-                                <Clock className="h-3.5 w-3.5" />
-                                Aguardando aluno
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-orange-700 bg-orange-50 px-2.5 py-1 rounded">
-                                <Clock className="h-3.5 w-3.5" />
-                                Pendente
-                              </span>
-                            )}
-                          </div>
-                        </div>
+            <div style={{ flex: "1 1 200px" }}>
+              <label style={{ display: "block", fontSize: "14px", fontWeight: 500, color: "#374151", marginBottom: "4px" }}>
+                Plano
+              </label>
+              <select
+                value={planoId}
+                onChange={(e) => setPlanoId(e.target.value)}
+                required
+                disabled={!!errorPlanos}
+                style={inputSelect}
+              >
+                <option value="">Selecione o plano</option>
+                {planos.map((p) => (
+                  <option key={p.id} value={String(p.id)}>
+                    {p.nome_plano} ({p.duracao_dias} dias)
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button type="submit" disabled={creating || !canCreateContract} style={btnPrimary}>
+                {creating ? "Criando..." : "Criar contrato"}
+              </button>
+              <button type="button" onClick={() => setShowForm(false)} style={btnSecondary}>
+                Cancelar
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
-                        {/* Ações */}
-                        <div className="flex flex-wrap items-center gap-2 shrink-0">
-                          <Link href={`/dashboard/contratos/${c.id}`}>
-                            <Button size="sm" variant="outline" className="gap-1.5">
-                              <Eye className="h-4 w-4" />
-                              Ver PDF
-                            </Button>
-                          </Link>
-                          {(c.status === "gerado" || c.status === "enviado") && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              disabled={gerandoId === c.id}
-                              onClick={() => handleGerar(c.id)}
-                              className="gap-1.5"
-                            >
-                              {gerandoId === c.id ? "Gerando..." : "Gerar PDF e link"}
-                            </Button>
-                          )}
-                          {podeCopiarLink && (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => copyLink(c.link_assinatura!)}
-                                className="gap-1.5"
-                              >
-                                <Copy className="h-4 w-4" />
-                                Copiar link
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => copyWhatsAppLink(c.link_assinatura!)}
-                                className="gap-1.5"
-                              >
-                                Enviar WhatsApp
-                              </Button>
-                            </>
-                          )}
-                          {c.pdf_url && (
-                            <a href={c.pdf_url} target="_blank" rel="noopener noreferrer">
-                              <Button size="sm" variant="outline" className="gap-1.5">
-                                <Download className="h-4 w-4" />
-                                Baixar PDF
-                              </Button>
-                            </a>
-                          )}
+      {!showForm && (
+        <button onClick={() => setShowForm(true)} style={btnSecondary}>
+          + Criar novo contrato
+        </button>
+      )}
+
+      <div style={card}>
+        {screenState === "loading" && (
+          <div style={{ padding: "48px", textAlign: "center", color: "#6b7280" }}>Carregando...</div>
+        )}
+        {screenState === "error" && (
+          <div style={{ padding: "48px", textAlign: "center" }}>
+            <p style={{ marginBottom: "8px", color: "#374151" }}>{errorContratos ?? "Erro ao carregar contratos."}</p>
+            <button onClick={() => load()} style={btnSecondary}>
+              Tentar novamente
+            </button>
+          </div>
+        )}
+        {screenState === "empty" && (
+          <div style={{ padding: "48px", textAlign: "center" }}>
+            <p style={{ marginBottom: "8px", color: "#374151" }}>Nenhum contrato cadastrado.</p>
+            <button onClick={() => setShowForm(true)} style={btnSecondary}>
+              Criar primeiro contrato
+            </button>
+          </div>
+        )}
+        {screenState === "success" && (
+          <div style={{ borderTop: "1px solid #e5e7eb" }}>
+            {contratos.map((c) => {
+              const assinado = c.status === "assinado";
+              const professorAssinou = !!c.assinatura_professor_url || c.status === "professor_assinado" || c.status === "assinado";
+              const podeCopiarLink = professorAssinou && c.link_assinatura;
+
+              return (
+                <div
+                  key={c.id}
+                  style={{
+                    padding: "20px",
+                    borderBottom: "1px solid #e5e7eb",
+                  }}
+                >
+                  <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                    <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "16px" }}>
+                      <div>
+                        <div style={{ fontWeight: 600, color: "#111827", marginBottom: "4px" }}>
+                          {c.aluno.nome_completo} · {c.plano.nome_plano.replace(/_/g, " ")}
                         </div>
+                        <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "8px" }}>
+                          {new Date(c.data_inicio).toLocaleDateString("pt-BR")} a {new Date(c.data_fim).toLocaleDateString("pt-BR")}
+                        </p>
+                        <span
+                          style={{
+                            display: "inline-block",
+                            fontSize: "12px",
+                            fontWeight: 500,
+                            padding: "4px 10px",
+                            borderRadius: "4px",
+                            backgroundColor: assinado ? "#dcfce7" : professorAssinou ? "#dbeafe" : "#ffedd5",
+                            color: assinado ? "#166534" : professorAssinou ? "#1d4ed8" : "#c2410c",
+                          }}
+                        >
+                          {assinado ? "Assinado" : professorAssinou ? "Aguardando aluno" : "Pendente"}
+                        </span>
                       </div>
-
-                      {/* Linha de assinatura do professor */}
-                      <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
-                        <div className="flex items-center gap-2 min-w-[120px]">
-                          <span className="text-xs font-medium text-gray-600">Assinatura do Professor:</span>
-                        </div>
-                        <div className="flex-1 flex items-center gap-2">
-                          {c.assinatura_professor_url ? (
-                            <>
-                              <img
-                                src={c.assinatura_professor_url}
-                                alt="Assinatura do professor"
-                                className="h-12 w-auto object-contain border border-gray-200 rounded bg-white"
-                              />
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => {
-                                  setContratoParaAssinar(c.id);
-                                  setModalAssinaturaOpen(true);
-                                }}
-                                className="text-xs text-gray-600 hover:text-gray-900"
-                              >
-                                Alterar
-                              </Button>
-                            </>
-                          ) : (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setContratoParaAssinar(c.id);
-                                setModalAssinaturaOpen(true);
-                              }}
-                              className="gap-1.5 text-xs"
-                              disabled={!c.link_assinatura}
-                            >
-                              <PenTool className="h-3.5 w-3.5" />
-                              {c.link_assinatura ? "Assinar" : "Aguardando geração"}
-                            </Button>
-                          )}
-                        </div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                        <Link
+                          href={`/dashboard/contratos/${c.id}`}
+                          style={{ ...btnSecondary, textDecoration: "none", display: "inline-flex", alignItems: "center" }}
+                        >
+                          Ver PDF
+                        </Link>
+                        {(c.status === "gerado" || c.status === "enviado") && (
+                          <button
+                            type="button"
+                            disabled={gerandoId === c.id}
+                            onClick={() => handleGerar(c.id)}
+                            style={btnSecondary}
+                          >
+                            {gerandoId === c.id ? "Gerando..." : "Gerar PDF e link"}
+                          </button>
+                        )}
+                        {podeCopiarLink && (
+                          <>
+                            <button type="button" onClick={() => copyLink(c.link_assinatura!)} style={btnSecondary}>
+                              Copiar link
+                            </button>
+                            <button type="button" onClick={() => copyWhatsAppLink(c.link_assinatura!)} style={btnSecondary}>
+                              Enviar WhatsApp
+                            </button>
+                          </>
+                        )}
+                        {c.pdf_url && (
+                          <a
+                            href={c.pdf_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ ...btnSecondary, textDecoration: "none", display: "inline-flex", alignItems: "center" }}
+                          >
+                            Baixar PDF
+                          </a>
+                        )}
                       </div>
                     </div>
+                    <div style={{ paddingTop: "8px", borderTop: "1px solid #f3f4f6", display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+                      <span style={{ fontSize: "12px", fontWeight: 500, color: "#6b7280" }}>Assinatura do Professor:</span>
+                      {c.assinatura_professor_url ? (
+                        <>
+                          <img
+                            src={c.assinatura_professor_url}
+                            alt="Assinatura do professor"
+                            style={{ height: "48px", border: "1px solid #e5e7eb", borderRadius: "4px", backgroundColor: "#fff" }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setContratoParaAssinar(c.id);
+                              setModalAssinaturaOpen(true);
+                            }}
+                            style={{ ...btnSecondary, padding: "4px 8px", fontSize: "12px" }}
+                          >
+                            Alterar
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={!c.link_assinatura}
+                          onClick={() => {
+                            setContratoParaAssinar(c.id);
+                            setModalAssinaturaOpen(true);
+                          }}
+                          style={btnSecondary}
+                        >
+                          {c.link_assinatura ? "Assinar" : "Aguardando geração"}
+                        </button>
+                      )}
+                    </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
-      {/* Modal de assinatura do professor */}
       {contratoParaAssinar !== null && (
         <AssinaturaProfessorModal
           open={modalAssinaturaOpen}
@@ -375,6 +435,10 @@ export default function ContratosPage() {
           }}
         />
       )}
+
+      <p style={{ marginTop: "24px", fontSize: "12px", color: "#9ca3af" }}>
+        Contratos · versão atualizada
+      </p>
     </div>
   );
 }

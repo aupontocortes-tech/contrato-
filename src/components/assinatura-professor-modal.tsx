@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Upload, PenTool, X } from "lucide-react";
+import { Upload, PenLine, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -190,7 +190,7 @@ export function AssinaturaProfessorModal({
               }}
               className="flex-1"
             >
-              <PenTool className="h-4 w-4 mr-2" />
+              <PenLine className="h-4 w-4 mr-2" />
               Desenhar
             </Button>
           </div>

@@ -2,16 +2,29 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 
+/** Remove tudo que não for dígito (CPF só números para armazenar e evitar duplicata por formatação). */
+function normalizarCpf(cpf: string): string {
+  return cpf.replace(/\D/g, "");
+}
+
 const createSchema = z.object({
-  nome_completo: z.string().min(1),
-  cpf: z.string().min(11),
-  email: z.string().email(),
+  nome_completo: z.string().min(1, "Nome é obrigatório"),
+  cpf: z.string().min(11, "CPF deve ter pelo menos 11 dígitos").transform(normalizarCpf).refine((s) => s.length === 11, "CPF deve ter 11 dígitos"),
+  email: z.string().email("E-mail inválido"),
   telefone: z.string().optional(),
 });
 
 export async function GET() {
-  const list = await prisma.aluno.findMany({ orderBy: { nome_completo: "asc" } });
-  return NextResponse.json(list);
+  try {
+    const list = await prisma.aluno.findMany({ orderBy: { nome_completo: "asc" } });
+    return NextResponse.json(list);
+  } catch (e) {
+    console.error("GET /api/alunos:", e);
+    return NextResponse.json(
+      { error: "Não foi possível carregar os alunos. Tente novamente." },
+      { status: 500 }
+    );
+  }
 }
 
 export async function POST(request: Request) {
@@ -19,12 +32,22 @@ export async function POST(request: Request) {
     const body = await request.json();
     const parsed = createSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: "Dados inválidos", details: parsed.error.flatten() }, { status: 400 });
+      const first = parsed.error.issues[0];
+      const msg = first ? `${first.path.join(".")}: ${first.message}` : "Dados inválidos";
+      return NextResponse.json({ error: msg }, { status: 400 });
     }
-    const aluno = await prisma.aluno.create({ data: parsed.data });
+    const aluno = await prisma.aluno.create({
+      data: {
+        nome_completo: parsed.data.nome_completo,
+        cpf: parsed.data.cpf,
+        email: parsed.data.email,
+        telefone: parsed.data.telefone || null,
+      },
+    });
     return NextResponse.json(aluno);
   } catch (e: unknown) {
-    const msg = e && typeof e === "object" && "code" in e && e.code === "P2002" ? "CPF ou email já cadastrado" : "Erro ao criar aluno";
+    const code = e && typeof e === "object" && "code" in e ? (e as { code: string }).code : null;
+    const msg = code === "P2002" ? "CPF ou e-mail já cadastrado." : "Erro ao criar aluno. Tente novamente.";
     return NextResponse.json({ error: msg }, { status: 400 });
   }
 }
