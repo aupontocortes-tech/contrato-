@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Users, FileText, Clock } from "lucide-react";
 
 type Stats = {
@@ -42,66 +40,73 @@ export default function DashboardPage() {
   return (
     <div style={{ padding: "24px" }}>
       <h1 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px", color: "#111827" }}>Dashboard</h1>
-      <div className="space-y-6">
+      <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
         {/* Cards informativos */}
-        <div className="grid gap-4 sm:grid-cols-3">
-        <Card className="border border-gray-200 bg-white">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
+          <div style={{ border: "1px solid #e5e7eb", borderRadius: "8px", backgroundColor: "#fff", padding: "16px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
-                <p className="text-sm text-gray-600 mb-1">Total de Alunos</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "4px" }}>Total de Alunos</p>
+                <p style={{ fontSize: "24px", fontWeight: 700, color: "#111827" }}>
                   {loading ? "..." : stats.totalAlunos}
                 </p>
               </div>
-              <div className="p-2 bg-blue-50 rounded-lg">
-                <Users className="h-5 w-5 text-blue-600" />
+              <div style={{ padding: "8px", backgroundColor: "#eff6ff", borderRadius: "8px" }}>
+                <Users style={{ width: "20px", height: "20px", color: "#2563eb" }} />
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        <Card className="border border-gray-200 bg-white">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
+          <div style={{ border: "1px solid #e5e7eb", borderRadius: "8px", backgroundColor: "#fff", padding: "16px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
-                <p className="text-sm text-gray-600 mb-1">Contratos Ativos</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "4px" }}>Contratos Ativos</p>
+                <p style={{ fontSize: "24px", fontWeight: 700, color: "#111827" }}>
                   {loading ? "..." : stats.contratosAtivos}
                 </p>
               </div>
-              <div className="p-2 bg-green-50 rounded-lg">
-                <FileText className="h-5 w-5 text-green-600" />
+              <div style={{ padding: "8px", backgroundColor: "#f0fdf4", borderRadius: "8px" }}>
+                <FileText style={{ width: "20px", height: "20px", color: "#16a34a" }} />
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        <Card className="border border-gray-200 bg-white">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
+          <div style={{ border: "1px solid #e5e7eb", borderRadius: "8px", backgroundColor: "#fff", padding: "16px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
-                <p className="text-sm text-gray-600 mb-1">Pendentes</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "4px" }}>Pendentes</p>
+                <p style={{ fontSize: "24px", fontWeight: 700, color: "#111827" }}>
                   {loading ? "..." : stats.contratosPendentes}
                 </p>
               </div>
-              <div className="p-2 bg-orange-50 rounded-lg">
-                <Clock className="h-5 w-5 text-orange-600" />
+              <div style={{ padding: "8px", backgroundColor: "#fffbeb", borderRadius: "8px" }}>
+                <Clock style={{ width: "20px", height: "20px", color: "#ea580c" }} />
               </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </div>
 
-      {/* Ação principal única */}
-      <div className="pt-4">
-        <Link href="/dashboard/contratos">
-          <Button size="lg" className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white">
-            Criar novo contrato
-          </Button>
-        </Link>
-      </div>
+        {/* Ação principal única */}
+        <div style={{ paddingTop: "16px" }}>
+          <Link href="/dashboard/contratos" style={{ textDecoration: "none" }}>
+            <button
+              style={{
+                padding: "12px 24px",
+                backgroundColor: "#2563eb",
+                color: "#fff",
+                border: "none",
+                borderRadius: "6px",
+                fontSize: "16px",
+                fontWeight: 500,
+                cursor: "pointer",
+              }}
+              onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#1d4ed8")}
+              onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#2563eb")}
+            >
+              Criar novo contrato
+            </button>
+          </Link>
+        </div>
       </div>
     </div>
   );
