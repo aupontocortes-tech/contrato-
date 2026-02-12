@@ -54,9 +54,9 @@ export function AssinaturaProfessorModal({
           const viewportWidth = window.innerWidth;
           const viewportHeight = window.innerHeight;
           
-          // Deixar espaço mínimo para header (~40px) e botões (~100px)
-          const headerHeight = 40;
-          const buttonsHeight = 100;
+          // Deixar espaço para header (~52px) e botões (~120px) - mais espaço para botões ficarem visíveis
+          const headerHeight = 52;
+          const buttonsHeight = 120;
           const availableHeight = viewportHeight - headerHeight - buttonsHeight;
           const availableWidth = viewportWidth - 16; // padding mínimo (8px cada lado)
           
@@ -398,15 +398,46 @@ export function AssinaturaProfessorModal({
       if (modo === "colar") {
         if (!imagemUrl) {
           toast.error("Cole ou faça upload de uma imagem de assinatura");
+          setSalvando(false);
           return;
         }
         assinaturaDataUrl = imagemUrl;
       } else {
-        if (!desenhou || !canvasRef.current) {
-          toast.error("Desenhe sua assinatura");
+        if (!canvasRef.current) {
+          toast.error("Erro: Canvas não encontrado");
+          setSalvando(false);
           return;
         }
-        assinaturaDataUrl = canvasRef.current.toDataURL("image/png");
+        
+        // Verificar se realmente desenhou algo
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          toast.error("Erro ao acessar canvas");
+          setSalvando(false);
+          return;
+        }
+        
+        // Verificar se há conteúdo no canvas
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const hasContent = imageData.data.some((pixel, index) => {
+          // Verificar pixels não transparentes (alpha > 0)
+          return index % 4 === 3 && pixel > 0;
+        });
+        
+        if (!hasContent && !desenhou) {
+          toast.error("Desenhe sua assinatura antes de salvar");
+          setSalvando(false);
+          return;
+        }
+        
+        assinaturaDataUrl = canvas.toDataURL("image/png");
+        
+        if (!assinaturaDataUrl || assinaturaDataUrl === "data:,") {
+          toast.error("Erro ao gerar imagem da assinatura");
+          setSalvando(false);
+          return;
+        }
       }
 
       const res = await fetch(`/api/contratos/${contratoId}/assinatura-professor`, {
@@ -415,19 +446,35 @@ export function AssinaturaProfessorModal({
         body: JSON.stringify({ assinatura: assinaturaDataUrl }),
       });
 
-      const data = await res.json();
       if (!res.ok) {
+        let errorMessage = "Erro ao salvar assinatura";
+        try {
+          const errorData = await res.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          errorMessage = `Erro ${res.status}: ${res.statusText}`;
+        }
+        toast.error(errorMessage);
+        setSalvando(false);
+        return;
+      }
+
+      const data = await res.json();
+      if (!data.ok) {
         toast.error(data.error || "Erro ao salvar assinatura");
+        setSalvando(false);
         return;
       }
 
       toast.success("Assinatura do professor salva!");
       setImagemUrl("");
       setDesenhou(false);
+      canvasImageRef.current = null;
       onOpenChange(false);
       onSuccess();
-    } catch {
-      toast.error("Erro de conexão");
+    } catch (error) {
+      console.error("Erro ao salvar assinatura:", error);
+      toast.error(error instanceof Error ? error.message : "Erro de conexão");
     } finally {
       setSalvando(false);
     }
@@ -452,7 +499,7 @@ export function AssinaturaProfessorModal({
         {isLandscape && modo === "manual" ? (
           <div className="flex flex-col h-full" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             {/* Header compacto em landscape com botão Salvar */}
-            <div className="flex items-center justify-between mb-1 pb-1 border-b" style={{ minHeight: '48px', flexShrink: 0 }}>
+            <div className="flex items-center justify-between mb-2 pb-2 border-b" style={{ minHeight: '52px', flexShrink: 0, paddingBottom: '12px' }}>
               <h3 className="text-sm font-semibold">Assinatura do Professor</h3>
               <Button
                 type="button"
@@ -460,6 +507,7 @@ export function AssinaturaProfessorModal({
                 disabled={salvando || !desenhou}
                 className="bg-blue-600 hover:bg-blue-700 text-white"
                 size="sm"
+                style={{ minHeight: '36px', padding: '8px 16px' }}
               >
                 {salvando ? "Salvando..." : "Salvar Assinatura"}
               </Button>
@@ -621,13 +669,14 @@ export function AssinaturaProfessorModal({
               </div>
               {/* Botões - layout diferente em landscape */}
               {isLandscape ? (
-                <div className="flex flex-col gap-2 mt-1" style={{ flexShrink: 0 }}>
+                <div className="flex flex-col gap-2 mt-2" style={{ flexShrink: 0, marginTop: '8px' }}>
                   <div className="flex gap-2">
                     <Button
                       type="button"
                       variant="outline"
                       onClick={() => onOpenChange(false)}
                       className="flex-1"
+                      style={{ minHeight: '44px' }}
                     >
                       Sair
                     </Button>
@@ -636,6 +685,7 @@ export function AssinaturaProfessorModal({
                       variant="outline"
                       onClick={limparCanvas}
                       className="flex-1"
+                      style={{ minHeight: '44px' }}
                     >
                       Limpar
                     </Button>
@@ -658,6 +708,7 @@ export function AssinaturaProfessorModal({
                         }
                       }}
                       className="flex-1 flex items-center justify-center gap-2"
+                      style={{ minHeight: '44px' }}
                     >
                       <RotateCw className="h-4 w-4" />
                       Voltar Vertical
@@ -667,6 +718,7 @@ export function AssinaturaProfessorModal({
                       onClick={handleSalvar}
                       disabled={salvando || !desenhou}
                       className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                      style={{ minHeight: '44px' }}
                     >
                       {salvando ? "Salvando..." : "Salvar Assinatura"}
                     </Button>
