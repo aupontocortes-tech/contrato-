@@ -166,20 +166,60 @@ export default function AssinarPage() {
     if (!desenhou || !canvasRef.current) return;
     setAssinando(true);
     try {
-      const dataUrl = canvasRef.current.toDataURL("image/png");
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        toast.error("Erro: Contexto do canvas não encontrado");
+        setAssinando(false);
+        return;
+      }
+
+      // Verificar se há conteúdo desenhado no canvas
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const hasPixels = imageData.data.some((v, i) => i % 4 === 3 && v > 0);
+
+      if (!hasPixels) {
+        toast.error("Desenhe sua assinatura antes de salvar");
+        setAssinando(false);
+        return;
+      }
+
+      let dataUrl: string;
+      try {
+        dataUrl = canvas.toDataURL("image/png");
+        if (!dataUrl || dataUrl === "data:," || dataUrl.length < 100) {
+          toast.error("Erro ao gerar imagem da assinatura");
+          setAssinando(false);
+          return;
+        }
+      } catch (canvasError) {
+        console.error("Erro ao gerar imagem do canvas:", canvasError);
+        toast.error("Erro ao gerar imagem da assinatura");
+        setAssinando(false);
+        return;
+      }
+
       const res = await fetch(`/api/contratos/${id}/assinar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ signature: dataUrl }),
       });
-      if (!res.ok) {
-        toast.error("Erro ao registrar assinatura");
+
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        const errorMsg = data?.error || `Erro ao salvar assinatura (${res.status})`;
+        console.error("Erro ao salvar assinatura:", errorMsg);
+        toast.error(errorMsg);
+        setAssinando(false);
         return;
       }
+
       toast.success("Contrato assinado com sucesso!");
       setContrato((c) => (c ? { ...c, status: "assinado" } : null));
-    } catch {
-      toast.error("Erro de conexão");
+    } catch (error) {
+      console.error("Erro ao salvar assinatura:", error);
+      toast.error(error instanceof Error ? error.message : "Erro de conexão");
     } finally {
       setAssinando(false);
     }
