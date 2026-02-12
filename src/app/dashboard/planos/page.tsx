@@ -43,26 +43,31 @@ export default function PlanosPage() {
         </Card>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {planos.map((p) => (
-            <Link key={p.id} href={`/dashboard/planos/${p.id}/contrato`}>
-              <Card className="border border-gray-200 bg-white hover:shadow-md transition-shadow cursor-pointer h-full">
-                <CardContent className="p-5">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 capitalize mb-1">
-                        {p.nome_plano.replace(/_/g, " ")}
-                      </h3>
-                      <p className="text-sm text-gray-600">{p.duracao_dias} dias</p>
+          {planos.map((p) => {
+            const isConsultoriaOnline = p.nome_plano.toLowerCase().includes("consultoria") && p.nome_plano.toLowerCase().includes("online");
+            return (
+              <Link key={p.id} href={`/dashboard/planos/${p.id}/contrato`}>
+                <Card className="border border-gray-200 bg-white hover:shadow-md transition-shadow cursor-pointer h-full">
+                  <CardContent className="p-5">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900 capitalize mb-1">
+                          {p.nome_plano.replace(/_/g, " ")}
+                        </h3>
+                        {!isConsultoriaOnline && (
+                          <p className="text-sm text-gray-600">{p.duracao_dias} dias</p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-blue-600 font-medium mt-4">
-                    <FileText className="h-4 w-4" />
-                    Ver contrato
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+                    <div className="flex items-center gap-2 text-sm text-blue-600 font-medium mt-4">
+                      <FileText className="h-4 w-4" />
+                      Ver contrato
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>
