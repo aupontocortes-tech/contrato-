@@ -44,19 +44,41 @@ export function AssinaturaProfessorModal({
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
       }
-      // Ajustar tamanho do canvas baseado no container
+      // Ajustar tamanho do canvas baseado no container e orientação
       const resizeCanvas = () => {
         if (!canvas || !canvas.parentElement) return;
         const container = canvas.parentElement;
         const containerWidth = container.clientWidth - 32; // padding
-        const aspectRatio = isLandscape ? 800 / 400 : 800 / 300;
-        const containerHeight = containerWidth / aspectRatio;
-        canvas.style.width = `${containerWidth}px`;
-        canvas.style.height = `${containerHeight}px`;
+        
+        // Em landscape, usar mais espaço vertical
+        let canvasWidth = 800;
+        let canvasHeight = isLandscape ? 400 : 300;
+        
+        // Se estiver em landscape real, aumentar ainda mais
+        const isActuallyLandscape = window.innerWidth > window.innerHeight;
+        if (isActuallyLandscape || isLandscape) {
+          canvasHeight = Math.max(400, window.innerHeight * 0.4); // 40% da altura da tela
+          canvasWidth = canvasHeight * 2; // Proporção 2:1
+        }
+        
+        // Ajustar para caber no container
+        const maxWidth = containerWidth;
+        const scale = Math.min(1, maxWidth / canvasWidth);
+        const finalWidth = canvasWidth * scale;
+        const finalHeight = canvasHeight * scale;
+        
+        canvas.style.width = `${finalWidth}px`;
+        canvas.style.height = `${finalHeight}px`;
       };
+      
       resizeCanvas();
       window.addEventListener("resize", resizeCanvas);
-      return () => window.removeEventListener("resize", resizeCanvas);
+      window.addEventListener("orientationchange", resizeCanvas);
+      
+      return () => {
+        window.removeEventListener("resize", resizeCanvas);
+        window.removeEventListener("orientationchange", resizeCanvas);
+      };
     }
   }, [open, modo, isLandscape]);
 
@@ -99,33 +121,98 @@ export function AssinaturaProfessorModal({
   const toggleLandscape = useCallback(async () => {
     try {
       if (!isLandscape) {
-        // Tentar usar Screen Orientation API
-        if (screen.orientation && (screen.orientation as any).lock) {
-          await (screen.orientation as any).lock("landscape");
-          setIsLandscape(true);
-          toast.success("Tela rotacionada para horizontal");
-        } else {
-          // Fallback: mostrar instrução
-          toast.info("Por favor, rotacione seu dispositivo manualmente para horizontal");
-          setIsLandscape(true);
+        // Tentar usar Screen Orientation API (método moderno)
+        if (screen.orientation && typeof (screen.orientation as any).lock === 'function') {
+          try {
+            await (screen.orientation as any).lock("landscape");
+            setIsLandscape(true);
+            toast.success("Tela rotacionada para horizontal");
+            return;
+          } catch (lockError) {
+            console.log("Lock não disponível, tentando método alternativo");
+          }
         }
+        
+        // Método alternativo usando fullscreen + orientação
+        if (document.documentElement.requestFullscreen) {
+          try {
+            await document.documentElement.requestFullscreen();
+            // Após entrar em fullscreen, tentar rotacionar
+            if (screen.orientation && typeof (screen.orientation as any).lock === 'function') {
+              await (screen.orientation as any).lock("landscape");
+            }
+            setIsLandscape(true);
+            toast.success("Tela rotacionada para horizontal");
+            return;
+          } catch (fsError) {
+            console.log("Fullscreen não disponível");
+          }
+        }
+        
+        // Fallback: instrução clara para o usuário
+        toast.info("Por favor, rotacione seu dispositivo fisicamente para horizontal (deite o celular)", {
+          duration: 5000,
+        });
+        setIsLandscape(true);
       } else {
         // Voltar para portrait
-        if (screen.orientation && (screen.orientation as any).unlock) {
-          (screen.orientation as any).unlock();
-          setIsLandscape(false);
-          toast.success("Tela voltou para vertical");
-        } else {
-          toast.info("Por favor, rotacione seu dispositivo manualmente para vertical");
-          setIsLandscape(false);
+        if (screen.orientation && typeof (screen.orientation as any).unlock === 'function') {
+          try {
+            (screen.orientation as any).unlock();
+            // Se estiver em fullscreen, sair também
+            if (document.fullscreenElement) {
+              await document.exitFullscreen();
+            }
+            setIsLandscape(false);
+            toast.success("Tela voltou para vertical");
+            return;
+          } catch (unlockError) {
+            console.log("Unlock não disponível");
+          }
         }
+        
+        // Sair do fullscreen se estiver
+        if (document.fullscreenElement) {
+          try {
+            await document.exitFullscreen();
+          } catch (e) {
+            console.log("Erro ao sair do fullscreen");
+          }
+        }
+        
+        toast.info("Por favor, rotacione seu dispositivo fisicamente para vertical", {
+          duration: 5000,
+        });
+        setIsLandscape(false);
       }
     } catch (error) {
-      // Se não conseguir bloquear, pelo menos mostra a instrução
-      toast.info("Por favor, rotacione seu dispositivo manualmente");
+      console.error("Erro ao rotacionar:", error);
+      toast.info("Por favor, rotacione seu dispositivo fisicamente", {
+        duration: 5000,
+      });
       setIsLandscape(!isLandscape);
     }
   }, [isLandscape]);
+
+  // Listener para detectar mudanças de orientação
+  useEffect(() => {
+    if (!open || modo !== "manual") return;
+
+    const handleOrientationChange = () => {
+      const isCurrentlyLandscape = window.innerWidth > window.innerHeight;
+      if (isCurrentlyLandscape !== isLandscape) {
+        setIsLandscape(isCurrentlyLandscape);
+      }
+    };
+
+    window.addEventListener("orientationchange", handleOrientationChange);
+    window.addEventListener("resize", handleOrientationChange);
+
+    return () => {
+      window.removeEventListener("orientationchange", handleOrientationChange);
+      window.removeEventListener("resize", handleOrientationChange);
+    };
+  }, [open, modo, isLandscape]);
 
   function handlePaste(e: React.ClipboardEvent) {
     e.preventDefault();
@@ -328,7 +415,7 @@ export function AssinaturaProfessorModal({
           {/* Modo Manual */}
           {modo === "manual" && (
             <div className="space-y-4">
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center flex-wrap gap-2">
                 <Label>Desenhe sua assinatura com o dedo</Label>
                 <Button
                   type="button"
@@ -338,9 +425,14 @@ export function AssinaturaProfessorModal({
                   className="flex items-center gap-2"
                 >
                   <RotateCw className="h-4 w-4" />
-                  {isLandscape ? "Vertical" : "Horizontal"}
+                  {isLandscape ? "Voltar Vertical" : "Rotacionar para Horizontal"}
                 </Button>
               </div>
+              {!isLandscape && (
+                <p className="text-xs text-muted-foreground">
+                  💡 Dica: Rotacione para horizontal para ter mais espaço para assinar
+                </p>
+              )}
               <div className="border-2 border-gray-300 rounded-lg p-4 bg-white touch-none">
                 <canvas
                   ref={canvasRef}
