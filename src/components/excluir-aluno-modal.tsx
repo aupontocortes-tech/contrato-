@@ -107,6 +107,42 @@ export function ExcluirAlunoModal({
           </DialogDescription>
         </DialogHeader>
 
+        <div className="py-4 space-y-2">
+          <Label htmlFor="codigo" className="text-sm font-medium">
+            Digite o código de confirmação (1, 2, 3 ou 4):
+          </Label>
+          <input
+            ref={inputRef}
+            id="codigo"
+            type="text"
+            inputMode="numeric"
+            value={codigo}
+            onChange={(e) => {
+              const value = e.target.value;
+              // Aceitar apenas números de 1 a 4
+              if (value === "") {
+                setCodigo("");
+              } else {
+                const lastChar = value.charAt(value.length - 1);
+                if (lastChar === "1" || lastChar === "2" || lastChar === "3" || lastChar === "4") {
+                  setCodigo(lastChar);
+                }
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && codigo && ["1", "2", "3", "4"].includes(codigo)) {
+                e.preventDefault();
+                handleExcluir();
+              }
+            }}
+            placeholder="Digite 1, 2, 3 ou 4"
+            maxLength={1}
+            autoFocus
+            disabled={excluindo}
+            className="text-center text-2xl font-bold w-full h-9 rounded-md border border-gray-300 bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-blue-500 focus-visible:ring-blue-500/50 focus-visible:ring-[3px] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50"
+            style={{ letterSpacing: "0.1em" }}
+          />
+        </div>
 
         <DialogFooter>
           <Button
