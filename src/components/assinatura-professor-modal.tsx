@@ -53,21 +53,26 @@ export function AssinaturaProfessorModal({
           const viewportWidth = window.innerWidth;
           const viewportHeight = window.innerHeight;
           
-          // Deixar espaço para header e botões (cerca de 120px)
-          const availableHeight = viewportHeight - 120;
-          const availableWidth = viewportWidth - 32; // padding lateral
+          // Deixar espaço mínimo para header (~40px) e botões (~100px)
+          const headerHeight = 40;
+          const buttonsHeight = 100;
+          const availableHeight = viewportHeight - headerHeight - buttonsHeight;
+          const availableWidth = viewportWidth - 16; // padding mínimo (8px cada lado)
           
-          // Usar quase toda a área disponível
-          const canvasWidth = Math.min(availableWidth, 1200);
-          const canvasHeight = Math.min(availableHeight, 600);
+          // Usar toda a área disponível proporcionalmente
+          const canvasWidth = availableWidth;
+          const canvasHeight = availableHeight;
           
-          // Atualizar dimensões reais do canvas
+          // Atualizar dimensões reais do canvas (alta resolução)
           canvas.width = canvasWidth;
           canvas.height = canvasHeight;
           
-          // Estilo para ocupar todo espaço
+          // Estilo para ocupar todo espaço disponível
           canvas.style.width = `${availableWidth}px`;
           canvas.style.height = `${availableHeight}px`;
+          canvas.style.display = 'block';
+          canvas.style.margin = '0';
+          canvas.style.padding = '0';
           
           // Reconfigurar contexto após redimensionar
           const ctx = canvas.getContext("2d");
@@ -78,20 +83,40 @@ export function AssinaturaProfessorModal({
             ctx.lineJoin = "round";
           }
         } else {
-          // Modo portrait - tamanho normal
-          const container = canvas.parentElement;
-          const containerWidth = container.clientWidth - 32; // padding
-          const canvasWidth = 800;
-          const canvasHeight = 300;
+          // Modo portrait - expandir proporcionalmente até os limites
+          const viewportWidth = window.innerWidth;
+          const viewportHeight = window.innerHeight;
           
-          const scale = Math.min(1, containerWidth / canvasWidth);
-          const finalWidth = canvasWidth * scale;
-          const finalHeight = canvasHeight * scale;
+          // Deixar espaço para header, botões e controles (~200px total)
+          const availableHeight = viewportHeight - 200;
+          const availableWidth = viewportWidth - 32; // padding lateral mínimo
           
+          // Proporção ideal para assinatura (mais larga que alta)
+          const idealRatio = 2.5; // largura 2.5x maior que altura
+          let canvasWidth = availableWidth;
+          let canvasHeight = canvasWidth / idealRatio;
+          
+          // Se altura calculada for maior que disponível, ajustar
+          if (canvasHeight > availableHeight) {
+            canvasHeight = availableHeight;
+            canvasWidth = canvasHeight * idealRatio;
+            // Se largura calculada exceder disponível, ajustar novamente
+            if (canvasWidth > availableWidth) {
+              canvasWidth = availableWidth;
+              canvasHeight = canvasWidth / idealRatio;
+            }
+          }
+          
+          // Atualizar dimensões reais do canvas
           canvas.width = canvasWidth;
           canvas.height = canvasHeight;
-          canvas.style.width = `${finalWidth}px`;
-          canvas.style.height = `${finalHeight}px`;
+          
+          // Estilo para ocupar espaço proporcionalmente
+          canvas.style.width = `${canvasWidth}px`;
+          canvas.style.height = `${canvasHeight}px`;
+          canvas.style.display = 'block';
+          canvas.style.margin = '0 auto';
+          canvas.style.padding = '0';
           
           // Reconfigurar contexto
           const ctx = canvas.getContext("2d");
@@ -364,14 +389,22 @@ export function AssinaturaProfessorModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
         className={isLandscape && modo === "manual" 
-          ? "sm:max-w-[100vw] sm:max-h-[100vh] sm:w-[100vw] sm:h-[100vh] sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-none p-2 sm:p-4" 
+          ? "sm:max-w-[100vw] sm:max-h-[100vh] sm:w-[100vw] sm:h-[100vh] sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-none p-1 sm:p-2 m-0" 
+          : modo === "manual"
+          ? "sm:max-w-[95vw] sm:w-[95vw] p-2 sm:p-3"
           : "sm:max-w-[600px]"
+        }
+        style={isLandscape && modo === "manual" 
+          ? { margin: 0, padding: '8px', maxWidth: '100vw', maxHeight: '100vh', width: '100vw', height: '100vh' }
+          : modo === "manual"
+          ? { maxWidth: '95vw', width: '95vw', margin: '0 auto' }
+          : {}
         }
       >
         {isLandscape && modo === "manual" ? (
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col h-full" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             {/* Header compacto em landscape */}
-            <div className="flex items-center justify-between mb-2 pb-2 border-b">
+            <div className="flex items-center justify-between mb-1 pb-1 border-b" style={{ minHeight: '40px', flexShrink: 0 }}>
               <Button
                 type="button"
                 variant="ghost"
@@ -489,7 +522,7 @@ export function AssinaturaProfessorModal({
 
           {/* Modo Manual */}
           {modo === "manual" && (
-            <div className={isLandscape ? "flex flex-col h-full flex-1" : "space-y-4"}>
+            <div className={isLandscape ? "flex flex-col h-full flex-1" : "space-y-4"} style={isLandscape ? { height: '100%', display: 'flex', flexDirection: 'column', flex: 1 } : {}}>
               {!isLandscape && (
                 <>
                   <div className="flex justify-between items-center flex-wrap gap-2">
@@ -510,11 +543,25 @@ export function AssinaturaProfessorModal({
                   </p>
                 </>
               )}
-              {/* Container do canvas - sem bordas em landscape */}
+              {/* Container do canvas - sem bordas, expandindo completamente */}
               <div 
                 className={isLandscape 
-                  ? "flex-1 flex flex-col bg-white touch-none min-h-0" 
-                  : "border-2 border-gray-300 rounded-lg p-4 bg-white touch-none"
+                  ? "flex-1 flex flex-col bg-white touch-none min-h-0 w-full" 
+                  : "border-2 border-gray-300 rounded-lg p-2 bg-white touch-none w-full"
+                }
+                style={isLandscape 
+                  ? { 
+                      flex: 1, 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      minHeight: 0, 
+                      width: '100%',
+                      padding: 0,
+                      margin: 0
+                    } 
+                  : {
+                      width: '100%'
+                    }
                 }
               >
                 <canvas
@@ -525,7 +572,12 @@ export function AssinaturaProfessorModal({
                     ? "w-full h-full cursor-crosshair touch-none"
                     : "w-full border border-gray-200 rounded cursor-crosshair touch-none"
                   }
-                  style={{ touchAction: "none" }}
+                  style={{ 
+                    touchAction: "none",
+                    width: isLandscape ? '100%' : '100%',
+                    height: isLandscape ? '100%' : 'auto',
+                    display: 'block'
+                  }}
                   onMouseDown={startDrawing}
                   onMouseMove={draw}
                   onMouseUp={stopDrawing}
@@ -537,7 +589,7 @@ export function AssinaturaProfessorModal({
                 />
               </div>
               {/* Botões - layout diferente em landscape */}
-              <div className={isLandscape ? "flex gap-2 mt-2" : "space-y-2"}>
+              <div className={isLandscape ? "flex gap-2 mt-1" : "space-y-2"} style={isLandscape ? { flexShrink: 0, minHeight: '48px' } : {}}>
                 <Button
                   type="button"
                   variant="outline"
@@ -591,7 +643,7 @@ export function AssinaturaProfessorModal({
           )}
           {/* Botões de ação em landscape - fixo no bottom */}
           {isLandscape && modo === "manual" && (
-            <div className="flex justify-end gap-2 pt-2 border-t mt-auto">
+            <div className="flex justify-end gap-2 pt-1 border-t mt-auto" style={{ flexShrink: 0, minHeight: '48px' }}>
               <Button
                 type="button"
                 variant="outline"
