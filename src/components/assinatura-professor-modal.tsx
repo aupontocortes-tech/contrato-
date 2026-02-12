@@ -415,19 +415,38 @@ export function AssinaturaProfessorModal({
         body: JSON.stringify({ assinatura: assinaturaDataUrl }),
       });
 
-      const data = await res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch (jsonError) {
+        console.error("Erro ao parsear resposta:", jsonError);
+        toast.error("Erro ao processar resposta do servidor");
+        setSalvando(false);
+        return;
+      }
+
       if (!res.ok) {
+        console.error("Erro na API:", data);
+        toast.error(data.error || `Erro ao salvar assinatura (${res.status})`);
+        setSalvando(false);
+        return;
+      }
+
+      if (!data.ok) {
         toast.error(data.error || "Erro ao salvar assinatura");
+        setSalvando(false);
         return;
       }
 
       toast.success("Assinatura do professor salva!");
       setImagemUrl("");
       setDesenhou(false);
+      canvasImageRef.current = null;
       onOpenChange(false);
       onSuccess();
-    } catch {
-      toast.error("Erro de conexão");
+    } catch (error) {
+      console.error("Erro ao salvar assinatura:", error);
+      toast.error(error instanceof Error ? error.message : "Erro de conexão");
     } finally {
       setSalvando(false);
     }
