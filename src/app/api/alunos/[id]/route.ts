@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-/** Código fixo para confirmar exclusão */
-const CODIGO_EXCLUSAO = "40";
+/** Códigos válidos para confirmar exclusão: 1, 2, 3 ou 4 */
+const CODIGOS_VALIDOS = ["1", "2", "3", "4"];
 
 export async function DELETE(
   request: Request,
@@ -23,9 +23,9 @@ export async function DELETE(
     }
 
     const codigo = String(body?.codigo ?? "").trim();
-    if (codigo !== CODIGO_EXCLUSAO) {
+    if (!CODIGOS_VALIDOS.includes(codigo)) {
       return NextResponse.json(
-        { error: "Código de confirmação inválido." },
+        { error: "Código incorreto. Digite 1, 2, 3 ou 4 para confirmar a exclusão." },
         { status: 403 }
       );
     }
