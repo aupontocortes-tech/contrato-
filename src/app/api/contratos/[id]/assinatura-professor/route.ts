@@ -48,46 +48,30 @@ export async function POST(
     }
 
     // Salvar arquivo
-    // Em Vercel (serverless), não podemos criar diretórios em runtime
-    // Vamos tentar salvar diretamente, assumindo que o diretório existe ou será criado
+    // Em Vercel (serverless), /public é somente leitura em runtime
+    // Vamos tentar salvar em /tmp (gravável) ou /public/contratos (se existir)
     const buffer = Buffer.from(base64, "base64");
-    const dir = path.join(process.cwd(), "public", "contratos");
     const fileName = `professor-${contratoId}.png`;
-    const filePath = path.join(dir, fileName);
     
-    // Tentar criar diretório e salvar arquivo
+    // Tentar salvar em /public/contratos primeiro (desenvolvimento)
+    let assinaturaUrl: string;
+    const publicDir = path.join(process.cwd(), "public", "contratos");
+    const publicPath = path.join(publicDir, fileName);
+    
     try {
-      // Criar diretório se não existir (funciona em desenvolvimento)
-      await fs.mkdir(dir, { recursive: true });
-      await fs.writeFile(filePath, buffer);
+      // Tentar criar diretório e salvar em public (funciona em desenvolvimento)
+      await fs.mkdir(publicDir, { recursive: true });
+      await fs.writeFile(publicPath, buffer);
+      assinaturaUrl = `/contratos/${fileName}`;
     } catch (error: any) {
       // Se falhar, pode ser ambiente serverless (Vercel)
-      // Em produção, o diretório deve existir no build
-      console.error("Erro ao salvar arquivo:", error);
+      // Em produção, vamos salvar a assinatura como data URL no banco
+      console.error("Erro ao salvar em public:", error);
       
-      // Se o erro for de diretório não encontrado, tentar criar novamente
-      if (error.code === "ENOENT") {
-        try {
-          // Tentar criar o diretório novamente
-          await fs.mkdir(dir, { recursive: true });
-          await fs.writeFile(filePath, buffer);
-        } catch (retryError: any) {
-          console.error("Erro ao tentar novamente:", retryError);
-          // Se ainda falhar, retornar erro claro
-          return NextResponse.json(
-            { error: "Erro ao salvar assinatura. O diretório não pôde ser criado. Verifique as configurações do servidor." },
-            { status: 500 }
-          );
-        }
-      } else {
-        return NextResponse.json(
-          { error: `Erro ao salvar assinatura: ${error.message || "Erro desconhecido"}` },
-          { status: 500 }
-        );
-      }
+      // Salvar como data URL diretamente no banco (solução para Vercel)
+      // Usar a assinatura original (data URL) como URL
+      assinaturaUrl = assinatura; // Usar o data URL completo como URL
     }
-    
-    const assinaturaUrl = `/contratos/${fileName}`;
 
     // Atualizar banco de dados
     await prisma.contrato.update({
