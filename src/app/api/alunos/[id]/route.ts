@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-/** Códigos válidos para confirmar exclusão: 00 ou 0000 */
-const CODIGOS_VALIDOS = ["00", "0000"];
+/** Código fixo para confirmar exclusão */
+const CODIGO_EXCLUSAO = "40";
 
 export async function DELETE(
   request: Request,
@@ -23,24 +23,14 @@ export async function DELETE(
     }
 
     const codigo = String(body?.codigo ?? "").trim();
-    if (!CODIGOS_VALIDOS.includes(codigo)) {
+    if (codigo !== CODIGO_EXCLUSAO) {
       return NextResponse.json(
-        { error: "Código incorreto. Digite 00 ou 0000 para confirmar a exclusão." },
+        { error: "Código de confirmação inválido." },
         { status: 403 }
       );
     }
 
-    // Verificar se o aluno tem contratos associados
-    const contratos = await prisma.contrato.findMany({
-      where: { aluno_id: alunoId },
-    });
-
-    if (contratos.length > 0) {
-      return NextResponse.json(
-        { error: `Não é possível excluir o aluno. Existem ${contratos.length} contrato(s) associado(s).` },
-        { status: 400 }
-      );
-    }
+    // Não verificar contratos - excluir sempre, mesmo que tenha contratos associados
 
     try {
       await prisma.aluno.delete({ where: { id: alunoId } });
