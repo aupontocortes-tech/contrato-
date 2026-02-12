@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DocumentoContrato } from "@/components/DocumentoContrato";
 import { toast } from "sonner";
-import { PenLine, Eraser } from "lucide-react";
+import { PenLine, Eraser, Upload, RotateCw } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 type ContratoEstruturado = {
   titulo: string;
@@ -41,6 +43,10 @@ export default function AssinarPage() {
   const [assinando, setAssinando] = useState(false);
   const [desenhou, setDesenhou] = useState(false);
   const desenhandoRef = useRef(false);
+  const [modo, setModo] = useState<"colar" | "manual">("manual");
+  const [imagemUrl, setImagemUrl] = useState<string>("");
+  const [isLandscape, setIsLandscape] = useState(false);
+  const canvasImageRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -117,6 +123,10 @@ export default function AssinarPage() {
       if (!desenhandoRef.current) return;
       const { x, y } = getCoords(e);
       draw(x, y);
+      // Salvar estado do canvas após desenhar
+      if (canvasRef.current) {
+        canvasImageRef.current = canvasRef.current.toDataURL("image/png");
+      }
     },
     [getCoords, draw]
   );
@@ -132,21 +142,192 @@ export default function AssinarPage() {
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     setDesenhou(false);
+    canvasImageRef.current = null;
   }, []);
+
+  function handlePaste(e: React.ClipboardEvent) {
+    e.preventDefault();
+    const items = e.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith("image/")) {
+        const file = item.getAsFile();
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            setImagemUrl(event.target?.result as string);
+            setModo("colar");
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+    }
+  }
+
+  function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setImagemUrl(event.target?.result as string);
+        setModo("colar");
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  // Função para rotacionar a tela para horizontal
+  const toggleLandscape = useCallback(async () => {
+    try {
+      // Salvar estado do canvas antes de mudar orientação
+      if (canvasRef.current && desenhou) {
+        canvasImageRef.current = canvasRef.current.toDataURL("image/png");
+      }
+      
+      if (!isLandscape) {
+        // Tentar usar Screen Orientation API
+        if (screen.orientation && typeof (screen.orientation as any).lock === 'function') {
+          try {
+            await (screen.orientation as any).lock("landscape");
+            setIsLandscape(true);
+            toast.success("Tela rotacionada para horizontal");
+            return;
+          } catch (lockError) {
+            console.log("Lock não disponível");
+          }
+        }
+        
+        // Método alternativo usando fullscreen
+        if (document.documentElement.requestFullscreen) {
+          try {
+            await document.documentElement.requestFullscreen();
+            if (screen.orientation && typeof (screen.orientation as any).lock === 'function') {
+              await (screen.orientation as any).lock("landscape");
+            }
+            setIsLandscape(true);
+            toast.success("Tela rotacionada para horizontal");
+            return;
+          } catch (fsError) {
+            console.log("Fullscreen não disponível");
+          }
+        }
+        
+        toast.info("Por favor, rotacione seu dispositivo para horizontal", {
+          duration: 5000,
+        });
+        setIsLandscape(true);
+      } else {
+        // Voltar para portrait
+        if (screen.orientation && typeof (screen.orientation as any).unlock === 'function') {
+          try {
+            (screen.orientation as any).unlock();
+            if (document.fullscreenElement) {
+              await document.exitFullscreen();
+            }
+            setIsLandscape(false);
+            toast.success("Tela voltou para vertical");
+            return;
+          } catch (unlockError) {
+            console.log("Unlock não disponível");
+          }
+        }
+        
+        if (document.fullscreenElement) {
+          try {
+            await document.exitFullscreen();
+          } catch (e) {
+            console.log("Erro ao sair do fullscreen");
+          }
+        }
+        
+        toast.info("Por favor, rotacione seu dispositivo para vertical", {
+          duration: 5000,
+        });
+        setIsLandscape(false);
+      }
+    } catch (error) {
+      console.error("Erro ao rotacionar:", error);
+      toast.info("Por favor, rotacione seu dispositivo fisicamente", {
+        duration: 5000,
+      });
+      setIsLandscape(!isLandscape);
+    }
+  }, [isLandscape, desenhou]);
+
+  // Listener para detectar mudanças de orientação
+  useEffect(() => {
+    if (!contrato || modo !== "manual") return;
+
+    const handleOrientationChange = () => {
+      const isCurrentlyLandscape = window.innerWidth > window.innerHeight;
+      if (isCurrentlyLandscape !== isLandscape) {
+        setIsLandscape(isCurrentlyLandscape);
+        // Restaurar imagem do canvas após mudança de orientação
+        setTimeout(() => {
+          if (canvasImageRef.current && canvasRef.current) {
+            const canvas = canvasRef.current;
+            const ctx = canvas.getContext("2d");
+            if (ctx) {
+              const img = new Image();
+              img.onload = () => {
+                const currentCtx = canvas.getContext("2d");
+                if (currentCtx) {
+                  currentCtx.clearRect(0, 0, canvas.width, canvas.height);
+                  currentCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                  setDesenhou(true);
+                }
+              };
+              img.src = canvasImageRef.current;
+            }
+          }
+        }, 100);
+      }
+    };
+
+    window.addEventListener("orientationchange", handleOrientationChange);
+    window.addEventListener("resize", handleOrientationChange);
+
+    return () => {
+      window.removeEventListener("orientationchange", handleOrientationChange);
+      window.removeEventListener("resize", handleOrientationChange);
+    };
+  }, [contrato, modo, isLandscape]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !contrato) return;
+    if (!canvas || !contrato || modo !== "manual") return;
     const container = canvas.parentElement;
     if (!container) return;
 
-    const init = () => {
-      const w = container.clientWidth || 320;
-      const h = 200;
-      canvas.width = w;
-      canvas.height = h;
-      canvas.style.width = w + "px";
-      canvas.style.height = h + "px";
+    const resizeCanvas = () => {
+      if (!canvas || !container) return;
+      
+      // Em landscape, usar quase toda a tela
+      if (isLandscape) {
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const headerHeight = 52;
+        const buttonsHeight = 200;
+        const availableHeight = viewportHeight - headerHeight - buttonsHeight;
+        const availableWidth = viewportWidth - 16;
+        
+        const canvasWidth = availableWidth;
+        const canvasHeight = availableHeight;
+        
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+        canvas.style.width = `${availableWidth}px`;
+        canvas.style.height = `${availableHeight}px`;
+      } else {
+        // Em portrait, usar tamanho padrão
+        const w = container.clientWidth || 320;
+        const h = 200;
+        canvas.width = w;
+        canvas.height = h;
+        canvas.style.width = w + "px";
+        canvas.style.height = h + "px";
+      }
+      
       const ctx = canvas.getContext("2d");
       if (ctx) {
         ctx.strokeStyle = "#000";
@@ -154,55 +335,85 @@ export default function AssinarPage() {
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
       }
+      
+      // Restaurar imagem se existir
+      if (canvasImageRef.current && ctx) {
+        const img = new Image();
+        img.onload = () => {
+          const currentCtx = canvas.getContext("2d");
+          if (currentCtx) {
+            currentCtx.clearRect(0, 0, canvas.width, canvas.height);
+            currentCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            setDesenhou(true);
+          }
+        };
+        img.src = canvasImageRef.current;
+      }
     };
 
-    init();
-    const ro = new ResizeObserver(init);
+    resizeCanvas();
+    const ro = new ResizeObserver(resizeCanvas);
     ro.observe(container);
     return () => ro.disconnect();
-  }, [contrato]);
+  }, [contrato, modo, isLandscape]);
 
   async function handleAssinar() {
-    if (!desenhou || !canvasRef.current) return;
     setAssinando(true);
     try {
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) {
-        toast.error("Erro: Contexto do canvas não encontrado");
-        setAssinando(false);
-        return;
-      }
+      let assinaturaDataUrl: string;
 
-      // Verificar se há conteúdo desenhado no canvas
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const hasPixels = imageData.data.some((v, i) => i % 4 === 3 && v > 0);
-
-      if (!hasPixels) {
-        toast.error("Desenhe sua assinatura antes de salvar");
-        setAssinando(false);
-        return;
-      }
-
-      let dataUrl: string;
-      try {
-        dataUrl = canvas.toDataURL("image/png");
-        if (!dataUrl || dataUrl === "data:," || dataUrl.length < 100) {
+      if (modo === "colar") {
+        if (!imagemUrl) {
+          toast.error("Cole ou faça upload de uma imagem de assinatura");
+          setAssinando(false);
+          return;
+        }
+        assinaturaDataUrl = imagemUrl;
+      } else {
+        if (!canvasRef.current) {
+          toast.error("Erro: Canvas não encontrado");
+          setAssinando(false);
+          return;
+        }
+        
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          toast.error("Erro: Contexto do canvas não encontrado");
+          setAssinando(false);
+          return;
+        }
+        
+        // Verificar se há conteúdo desenhado no canvas
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const hasPixels = imageData.data.some((v, i) => i % 4 === 3 && v > 0);
+        
+        if (!hasPixels) {
+          toast.error("Desenhe sua assinatura antes de salvar");
+          setAssinando(false);
+          return;
+        }
+        
+        try {
+          assinaturaDataUrl = canvas.toDataURL("image/png");
+          
+          if (!assinaturaDataUrl || assinaturaDataUrl === "data:," || assinaturaDataUrl.length < 100) {
+            toast.error("Erro ao gerar imagem da assinatura");
+            setAssinando(false);
+            return;
+          }
+        } catch (canvasError) {
+          console.error("Erro ao gerar imagem do canvas:", canvasError);
           toast.error("Erro ao gerar imagem da assinatura");
           setAssinando(false);
           return;
         }
-      } catch (canvasError) {
-        console.error("Erro ao gerar imagem do canvas:", canvasError);
-        toast.error("Erro ao gerar imagem da assinatura");
-        setAssinando(false);
-        return;
       }
 
       const res = await fetch(`/api/contratos/${id}/assinar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ signature: dataUrl }),
+        body: JSON.stringify({ signature: assinaturaDataUrl }),
       });
 
       const data = await res.json();
@@ -215,7 +426,10 @@ export default function AssinarPage() {
         return;
       }
 
-      toast.success("Contrato assinado com sucesso!");
+      toast.success("Excluído");
+      setImagemUrl("");
+      setDesenhou(false);
+      canvasImageRef.current = null;
       setContrato((c) => (c ? { ...c, status: "assinado" } : null));
     } catch (error) {
       console.error("Erro ao salvar assinatura:", error);
@@ -349,39 +563,131 @@ export default function AssinarPage() {
       {/* Bloco de assinatura — cliente clica e assina aqui */}
       <section className="flex-shrink-0 p-4 pt-0 border-t border-border bg-background/95">
         <div className="max-w-2xl mx-auto space-y-3">
-          <h2 className="text-base font-semibold">Assinatura de próprio punho</h2>
-          <p className="text-sm text-muted-foreground">
-            Assine no quadro abaixo com o dedo. No celular, use na horizontal para mais espaço.
-          </p>
-          <div className="w-full h-[200px] border-2 border-dashed border-muted-foreground/40 rounded-lg overflow-hidden bg-white touch-none">
-            <canvas
-              ref={canvasRef}
-              className="block w-full h-[200px] cursor-crosshair"
-              style={{ touchAction: "none" }}
-              onMouseDown={startDraw}
-              onMouseMove={moveDraw}
-              onMouseUp={endDraw}
-              onMouseLeave={endDraw}
-              onTouchStart={startDraw}
-              onTouchMove={moveDraw}
-              onTouchEnd={endDraw}
-            />
+          <h2 className="text-base font-semibold">Assinatura</h2>
+          
+          {/* Seleção de modo */}
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant={modo === "colar" ? "default" : "outline"}
+              size="sm"
+              onClick={() => {
+                setModo("colar");
+                setDesenhou(!!imagemUrl);
+              }}
+              className="flex-1"
+            >
+              <Upload className="size-4 mr-2" />
+              Colar assinatura (GOV)
+            </Button>
+            <Button
+              type="button"
+              variant={modo === "manual" ? "default" : "outline"}
+              size="sm"
+              onClick={() => {
+                setModo("manual");
+                setImagemUrl("");
+              }}
+              className="flex-1"
+            >
+              <PenLine className="size-4 mr-2" />
+              Desenhar
+            </Button>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={clearCanvas}
-            className="w-full"
-          >
-            <Eraser className="size-4 mr-2" />
-            Limpar e assinar de novo
-          </Button>
+
+          {/* Modo colar */}
+          {modo === "colar" && (
+            <div className="space-y-3">
+              <div
+                onPaste={handlePaste}
+                className="border-2 border-dashed border-muted-foreground/40 rounded-lg p-4 bg-white"
+              >
+                <Label htmlFor="upload-assinatura" className="text-sm font-medium block mb-2">
+                  Cole a imagem da assinatura (Ctrl+V) ou faça upload:
+                </Label>
+                <Input
+                  id="upload-assinatura"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  className="mb-2"
+                />
+                {imagemUrl && (
+                  <div className="mt-3">
+                    <img
+                      src={imagemUrl}
+                      alt="Assinatura colada"
+                      className="max-w-full h-auto max-h-48 mx-auto border border-gray-300 rounded"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setImagemUrl("");
+                        setDesenhou(false);
+                      }}
+                      className="w-full mt-2"
+                    >
+                      <X className="size-4 mr-2" />
+                      Remover imagem
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Modo desenhar */}
+          {modo === "manual" && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  Assine no quadro abaixo com o dedo.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={toggleLandscape}
+                  className="flex items-center gap-2"
+                >
+                  <RotateCw className="size-4" />
+                  {isLandscape ? "Vertical" : "Horizontal"}
+                </Button>
+              </div>
+              <div className="w-full border-2 border-dashed border-muted-foreground/40 rounded-lg overflow-hidden bg-white touch-none" style={{ height: isLandscape ? "auto" : "200px", minHeight: isLandscape ? "300px" : "200px" }}>
+                <canvas
+                  ref={canvasRef}
+                  className="block w-full cursor-crosshair"
+                  style={{ touchAction: "none", height: isLandscape ? "100%" : "200px" }}
+                  onMouseDown={startDraw}
+                  onMouseMove={moveDraw}
+                  onMouseUp={endDraw}
+                  onMouseLeave={endDraw}
+                  onTouchStart={startDraw}
+                  onTouchMove={moveDraw}
+                  onTouchEnd={endDraw}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={clearCanvas}
+                className="w-full"
+              >
+                <Eraser className="size-4 mr-2" />
+                Limpar e assinar de novo
+              </Button>
+            </div>
+          )}
+
           <Button
             className="w-full h-12 text-base"
             size="lg"
             onClick={handleAssinar}
-            disabled={!desenhou || assinando}
+            disabled={assinando || (modo === "colar" ? !imagemUrl : !desenhou)}
           >
             <PenLine className="size-5 mr-2" />
             {assinando ? "Registrando..." : "Confirmar assinatura"}
