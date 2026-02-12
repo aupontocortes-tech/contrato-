@@ -72,7 +72,35 @@ export default function RootLayout({
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
                   navigator.serviceWorker.register('/sw.js')
+                    .then((registration) => {
+                      // Verifica se há atualização disponível
+                      registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        if (newWorker) {
+                          newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                              // Nova versão disponível, força reload
+                              window.location.reload();
+                            }
+                          });
+                        }
+                      });
+                      
+                      // Verifica atualizações periodicamente
+                      setInterval(() => {
+                        registration.update();
+                      }, 60000); // Verifica a cada minuto
+                    })
                     .catch(() => {});
+                  
+                  // Força atualização quando a página ganha foco
+                  window.addEventListener('focus', () => {
+                    navigator.serviceWorker.getRegistration().then((registration) => {
+                      if (registration) {
+                        registration.update();
+                      }
+                    });
+                  });
                 });
               }
             `,
