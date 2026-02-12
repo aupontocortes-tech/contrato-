@@ -33,6 +33,7 @@ export function AssinaturaProfessorModal({
   const [isDrawing, setIsDrawing] = useState(false);
   const desenhandoRef = useRef(false);
   const [isLandscape, setIsLandscape] = useState(false);
+  const canvasImageRef = useRef<string | null>(null); // Para preservar assinatura ao mudar orientação
 
   useEffect(() => {
     if (open && modo === "manual" && canvasRef.current) {
@@ -82,6 +83,17 @@ export function AssinaturaProfessorModal({
             ctx.lineCap = "round";
             ctx.lineJoin = "round";
           }
+          
+          // Restaurar imagem se existir
+          if (canvasImageRef.current) {
+            const img = new Image();
+            img.onload = () => {
+              ctx.clearRect(0, 0, canvas.width, canvas.height);
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+              setDesenhou(true);
+            };
+            img.src = canvasImageRef.current;
+          }
         } else {
           // Modo portrait - expandir proporcionalmente até os limites
           const viewportWidth = window.innerWidth;
@@ -126,6 +138,17 @@ export function AssinaturaProfessorModal({
             ctx.lineCap = "round";
             ctx.lineJoin = "round";
           }
+          
+          // Restaurar imagem se existir
+          if (canvasImageRef.current) {
+            const img = new Image();
+            img.onload = () => {
+              ctx.clearRect(0, 0, canvas.width, canvas.height);
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+              setDesenhou(true);
+            };
+            img.src = canvasImageRef.current;
+          }
         }
       };
       
@@ -145,6 +168,7 @@ export function AssinaturaProfessorModal({
     if (!open) {
       setDesenhou(false);
       setIsLandscape(false);
+      canvasImageRef.current = null;
       if (canvasRef.current) {
         const ctx = canvasRef.current.getContext("2d");
         if (ctx) {
@@ -178,6 +202,11 @@ export function AssinaturaProfessorModal({
   // Função para rotacionar a tela para horizontal
   const toggleLandscape = useCallback(async () => {
     try {
+      // Salvar estado do canvas antes de mudar orientação
+      if (canvasRef.current && desenhou) {
+        canvasImageRef.current = canvasRef.current.toDataURL("image/png");
+      }
+      
       if (!isLandscape) {
         // Tentar usar Screen Orientation API (método moderno)
         if (screen.orientation && typeof (screen.orientation as any).lock === 'function') {
@@ -250,7 +279,7 @@ export function AssinaturaProfessorModal({
       });
       setIsLandscape(!isLandscape);
     }
-  }, [isLandscape]);
+  }, [isLandscape, desenhou]);
 
   // Listener para detectar mudanças de orientação
   useEffect(() => {
@@ -326,6 +355,8 @@ export function AssinaturaProfessorModal({
     ctx.lineTo(x, y);
     ctx.stroke();
     setDesenhou(true);
+    // Salvar estado do canvas após desenhar
+    canvasImageRef.current = canvas.toDataURL("image/png");
   }, [isDrawing, getCoords]);
 
   const stopDrawing = useCallback(() => {
@@ -339,8 +370,25 @@ export function AssinaturaProfessorModal({
     if (ctx) {
       ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
       setDesenhou(false);
+      canvasImageRef.current = null;
     }
   }
+
+  // Função para restaurar imagem do canvas
+  const restoreCanvasImage = useCallback(() => {
+    if (!canvasRef.current || !canvasImageRef.current) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    
+    const img = new Image();
+    img.onload = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      setDesenhou(true);
+    };
+    img.src = canvasImageRef.current;
+  }, []);
 
   async function handleSalvar() {
     setSalvando(true);
@@ -403,34 +451,17 @@ export function AssinaturaProfessorModal({
       >
         {isLandscape && modo === "manual" ? (
           <div className="flex flex-col h-full" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            {/* Header compacto em landscape */}
-            <div className="flex items-center justify-between mb-1 pb-1 border-b" style={{ minHeight: '40px', flexShrink: 0 }}>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setIsLandscape(false);
-                  if (screen.orientation && typeof (screen.orientation as any).unlock === 'function') {
-                    (screen.orientation as any).unlock();
-                  }
-                  if (document.fullscreenElement) {
-                    document.exitFullscreen();
-                  }
-                }}
-                className="flex items-center gap-2"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Voltar
-              </Button>
+            {/* Header compacto em landscape com botão Salvar */}
+            <div className="flex items-center justify-between mb-1 pb-1 border-b" style={{ minHeight: '48px', flexShrink: 0 }}>
               <h3 className="text-sm font-semibold">Assinatura do Professor</h3>
               <Button
                 type="button"
-                variant="ghost"
+                onClick={handleSalvar}
+                disabled={salvando || !desenhou}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
                 size="sm"
-                onClick={() => onOpenChange(false)}
               >
-                <X className="h-4 w-4" />
+                {salvando ? "Salvando..." : "Salvar Assinatura"}
               </Button>
             </div>
           </div>
@@ -589,61 +620,76 @@ export function AssinaturaProfessorModal({
                 />
               </div>
               {/* Botões - layout diferente em landscape */}
-              <div className={isLandscape ? "flex gap-2 mt-1" : "space-y-2"} style={isLandscape ? { flexShrink: 0, minHeight: '48px' } : {}}>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={limparCanvas}
-                  className={isLandscape ? "flex-1" : "w-full"}
-                >
-                  Limpar
-                </Button>
-                {isLandscape && (
+              {isLandscape ? (
+                <div className="flex flex-col gap-2 mt-1" style={{ flexShrink: 0 }}>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => onOpenChange(false)}
+                      className="flex-1"
+                    >
+                      Sair
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={limparCanvas}
+                      className="flex-1"
+                    >
+                      Limpar
+                    </Button>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        // Salvar estado antes de mudar orientação
+                        if (canvasRef.current && desenhou) {
+                          canvasImageRef.current = canvasRef.current.toDataURL("image/png");
+                        }
+                        setIsLandscape(false);
+                        if (screen.orientation && typeof (screen.orientation as any).unlock === 'function') {
+                          (screen.orientation as any).unlock();
+                        }
+                        if (document.fullscreenElement) {
+                          document.exitFullscreen();
+                        }
+                      }}
+                      className="flex-1 flex items-center justify-center gap-2"
+                    >
+                      <RotateCw className="h-4 w-4" />
+                      Voltar Vertical
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handleSalvar}
+                      disabled={salvando || !desenhou}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      {salvando ? "Salvando..." : "Salvar Assinatura"}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => {
-                      setIsLandscape(false);
-                      if (screen.orientation && typeof (screen.orientation as any).unlock === 'function') {
-                        (screen.orientation as any).unlock();
-                      }
-                      if (document.fullscreenElement) {
-                        document.exitFullscreen();
-                      }
-                    }}
-                    className="flex items-center gap-2"
+                    onClick={limparCanvas}
+                    className="w-full"
                   >
-                    <RotateCw className="h-4 w-4" />
-                    Voltar Vertical
+                    Limpar
                   </Button>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Botões de ação - esconder em landscape */}
+          {/* Botões de ação - esconder em landscape manual */}
           {(!isLandscape || modo !== "manual") && (
             <div className="flex justify-end gap-2 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="button"
-              onClick={handleSalvar}
-              disabled={salvando || (modo === "colar" && !imagemUrl) || (modo === "manual" && !desenhou)}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {salvando ? "Salvando..." : "Salvar Assinatura"}
-            </Button>
-          </div>
-          )}
-          {/* Botões de ação em landscape - fixo no bottom */}
-          {isLandscape && modo === "manual" && (
-            <div className="flex justify-end gap-2 pt-1 border-t mt-auto" style={{ flexShrink: 0, minHeight: '48px' }}>
               <Button
                 type="button"
                 variant="outline"
@@ -654,7 +700,7 @@ export function AssinaturaProfessorModal({
               <Button
                 type="button"
                 onClick={handleSalvar}
-                disabled={salvando || !desenhou}
+                disabled={salvando || (modo === "colar" && !imagemUrl) || (modo === "manual" && !desenhou)}
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 {salvando ? "Salvando..." : "Salvar Assinatura"}
