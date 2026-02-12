@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Users, FileText, Clock } from "lucide-react";
 
 type Stats = {
@@ -40,6 +41,36 @@ export default function DashboardPage() {
   return (
     <div style={{ padding: "24px" }}>
       <h1 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px", color: "#111827" }}>Dashboard</h1>
+      
+      {/* Seção de boas-vindas com logo e mensagem */}
+      <div style={{ 
+        display: "flex", 
+        flexDirection: "column", 
+        alignItems: "center", 
+        justifyContent: "center",
+        marginBottom: "32px",
+        padding: "24px 0"
+      }}>
+        <div style={{ 
+          maxWidth: "300px",
+          width: "100%"
+        }}>
+          <Image
+            src="/dashboard-logo.png"
+            alt="Logo Natália Personal"
+            width={300}
+            height={200}
+            style={{
+              width: "100%",
+              height: "auto",
+              objectFit: "contain"
+            }}
+            priority
+            unoptimized
+          />
+        </div>
+      </div>
+
       <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
         {/* Cards informativos */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
