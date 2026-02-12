@@ -5,6 +5,14 @@ Contraton - Aplicação web para gestão de contratos (Next.js 15, TypeScript, T
 
 ## Regras Obrigatórias
 
+### 0. REGRA PRINCIPAL - NÃO ALTERAR SEM PEDIDO EXPLÍCITO
+- **CRÍTICO: APENAS modificar código/arquivos que o usuário solicitar explicitamente**
+- **NUNCA fazer alterações em features existentes, UI ou funcionalidades sem pedido explícito do usuário**
+- **NUNCA "melhorar" ou "otimizar" código a menos que o usuário especificamente peça**
+- Se algo precisar de configuração ou setup, informar o usuário mas NÃO fazer alterações automaticamente
+- Se o usuário pedir para corrigir algo, corrigir APENAS o que foi pedido, nada mais
+- Não fazer "melhorias" ou "refatorações" não solicitadas
+
 ### 1. Segurança (OWASP Top 10)
 - SEMPRE validar inputs com Zod
 - NUNCA expor dados sensíveis em logs
