@@ -46,33 +46,48 @@ export function ExcluirAlunoModal({
   }, [open]);
 
   async function handleExcluir() {
-    if (!codigo.trim()) {
+    const codigoLimpo = codigo.trim();
+    
+    if (!codigoLimpo) {
       toast.error("Digite o código de confirmação");
       return;
     }
 
-    if (!["1", "2", "3", "4"].includes(codigo.trim())) {
+    if (!["1", "2", "3", "4"].includes(codigoLimpo)) {
       toast.error("Código inválido. Digite 1, 2, 3 ou 4");
       return;
     }
 
     setExcluindo(true);
     try {
+      console.log("Tentando excluir aluno:", alunoId, "com código:", codigoLimpo);
+      
       const res = await fetch(`/api/alunos/${alunoId}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ codigo: codigo.trim() }),
+        body: JSON.stringify({ codigo: codigoLimpo }),
       });
 
       const data = await res.json();
+      console.log("Resposta da API:", { status: res.status, ok: res.ok, data });
 
-      if (!res.ok || !data.ok) {
-        const errorMsg = data?.error || "Erro ao excluir aluno";
+      if (!res.ok) {
+        const errorMsg = data?.error || `Erro ao excluir aluno (${res.status})`;
+        console.error("Erro na resposta:", errorMsg);
         toast.error(errorMsg);
         setExcluindo(false);
         return;
       }
 
+      if (!data.ok) {
+        const errorMsg = data?.error || "Erro ao excluir aluno";
+        console.error("Erro nos dados:", errorMsg);
+        toast.error(errorMsg);
+        setExcluindo(false);
+        return;
+      }
+
+      console.log("Aluno excluído com sucesso!");
       toast.success("Aluno excluído com sucesso!");
       setCodigo("");
       onOpenChange(false);
@@ -111,28 +126,30 @@ export function ExcluirAlunoModal({
             inputMode="numeric"
             value={codigo}
             onChange={(e) => {
-              const value = e.target.value.trim();
+              const value = e.target.value;
               // Aceitar apenas números de 1 a 4
               if (value === "") {
                 setCodigo("");
-              } else if (/^[1-4]$/.test(value)) {
-                setCodigo(value);
+              } else {
+                // Pegar apenas o último caractere se for 1, 2, 3 ou 4
+                const lastChar = value.slice(-1);
+                if (["1", "2", "3", "4"].includes(lastChar)) {
+                  setCodigo(lastChar);
+                } else {
+                  // Se não for válido, manter o valor anterior
+                  setCodigo(codigo);
+                }
               }
             }}
-            onKeyPress={(e) => {
-              // Permitir apenas números de 1 a 4
-              if (!/^[1-4]$/.test(e.key) && e.key !== "Enter" && e.key !== "Backspace" && e.key !== "Delete") {
-                e.preventDefault();
-              }
-            }}
-            placeholder="Digite 1, 2, 3 ou 4"
-            maxLength={1}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && codigo.trim() && ["1", "2", "3", "4"].includes(codigo.trim())) {
+              // Permitir Enter apenas se houver código válido
+              if (e.key === "Enter" && codigo && ["1", "2", "3", "4"].includes(codigo)) {
                 e.preventDefault();
                 handleExcluir();
               }
             }}
+            placeholder="Digite 1, 2, 3 ou 4"
+            maxLength={1}
             autoFocus
             disabled={excluindo}
             className="text-center text-2xl font-bold"
@@ -154,7 +171,7 @@ export function ExcluirAlunoModal({
           <Button
             variant="destructive"
             onClick={handleExcluir}
-            disabled={excluindo || !codigo.trim()}
+            disabled={excluindo || !codigo || !["1", "2", "3", "4"].includes(codigo.trim())}
           >
             {excluindo ? "Excluindo..." : "Excluir"}
           </Button>
