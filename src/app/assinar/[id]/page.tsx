@@ -426,7 +426,7 @@ export default function AssinarPage() {
         return;
       }
 
-      toast.success("Excluído");
+      toast.success("Contrato assinado com sucesso!");
       setImagemUrl("");
       setDesenhou(false);
       canvasImageRef.current = null;
