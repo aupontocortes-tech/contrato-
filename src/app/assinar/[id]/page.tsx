@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DocumentoContrato } from "@/components/DocumentoContrato";
 import { toast } from "sonner";
-import { PenLine, Eraser, Upload, RotateCw, Download } from "lucide-react";
+import { PenLine, Eraser, Upload, RotateCw, Download, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
