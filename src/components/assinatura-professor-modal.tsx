@@ -398,46 +398,15 @@ export function AssinaturaProfessorModal({
       if (modo === "colar") {
         if (!imagemUrl) {
           toast.error("Cole ou faça upload de uma imagem de assinatura");
-          setSalvando(false);
           return;
         }
         assinaturaDataUrl = imagemUrl;
       } else {
-        if (!canvasRef.current) {
-          toast.error("Erro: Canvas não encontrado");
-          setSalvando(false);
+        if (!desenhou || !canvasRef.current) {
+          toast.error("Desenhe sua assinatura");
           return;
         }
-        
-        // Verificar se realmente desenhou algo
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
-          toast.error("Erro ao acessar canvas");
-          setSalvando(false);
-          return;
-        }
-        
-        // Verificar se há conteúdo no canvas
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const hasContent = imageData.data.some((pixel, index) => {
-          // Verificar pixels não transparentes (alpha > 0)
-          return index % 4 === 3 && pixel > 0;
-        });
-        
-        if (!hasContent && !desenhou) {
-          toast.error("Desenhe sua assinatura antes de salvar");
-          setSalvando(false);
-          return;
-        }
-        
-        assinaturaDataUrl = canvas.toDataURL("image/png");
-        
-        if (!assinaturaDataUrl || assinaturaDataUrl === "data:,") {
-          toast.error("Erro ao gerar imagem da assinatura");
-          setSalvando(false);
-          return;
-        }
+        assinaturaDataUrl = canvasRef.current.toDataURL("image/png");
       }
 
       const res = await fetch(`/api/contratos/${contratoId}/assinatura-professor`, {
@@ -446,35 +415,19 @@ export function AssinaturaProfessorModal({
         body: JSON.stringify({ assinatura: assinaturaDataUrl }),
       });
 
-      if (!res.ok) {
-        let errorMessage = "Erro ao salvar assinatura";
-        try {
-          const errorData = await res.json();
-          errorMessage = errorData.error || errorMessage;
-        } catch {
-          errorMessage = `Erro ${res.status}: ${res.statusText}`;
-        }
-        toast.error(errorMessage);
-        setSalvando(false);
-        return;
-      }
-
       const data = await res.json();
-      if (!data.ok) {
+      if (!res.ok) {
         toast.error(data.error || "Erro ao salvar assinatura");
-        setSalvando(false);
         return;
       }
 
       toast.success("Assinatura do professor salva!");
       setImagemUrl("");
       setDesenhou(false);
-      canvasImageRef.current = null;
       onOpenChange(false);
       onSuccess();
-    } catch (error) {
-      console.error("Erro ao salvar assinatura:", error);
-      toast.error(error instanceof Error ? error.message : "Erro de conexão");
+    } catch {
+      toast.error("Erro de conexão");
     } finally {
       setSalvando(false);
     }
