@@ -39,81 +39,31 @@ export async function POST(
       );
     }
 
-    // Suporta data URL (base64) ou URL de imagem
+    // Processar data URL (formato: data:image/png;base64,...)
     let base64: string;
     if (assinatura.startsWith("data:image")) {
-      // Extrair base64 de data URL
-      const base64Match = assinatura.match(/^data:image\/[a-z]+;base64,(.+)$/);
-      if (!base64Match || !base64Match[1]) {
-        console.error("Formato de data URL inválido");
-        return NextResponse.json(
-          { error: "Formato de imagem inválido." },
-          { status: 400 }
-        );
-      }
-      base64 = base64Match[1];
-    } else if (assinatura.startsWith("http")) {
-      // Se for uma URL, baixa a imagem
-      try {
-        const response = await fetch(assinatura);
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-        const buffer = await response.arrayBuffer();
-        base64 = Buffer.from(buffer).toString("base64");
-      } catch (fetchError) {
-        console.error("Erro ao baixar imagem:", fetchError);
-        return NextResponse.json(
-          { error: "Erro ao baixar imagem da URL." },
-          { status: 400 }
-        );
-      }
+      // Extrair base64 - suporta qualquer formato de imagem
+      base64 = assinatura.replace(/^data:image\/[a-z]+;base64,/, "");
     } else {
-      // Assume que já é base64 puro
+      // Se não for data URL, assume que já é base64 puro
       base64 = assinatura;
     }
 
-    // Validar base64
-    if (!base64 || base64.length === 0) {
-      console.error("Base64 vazio ou inválido");
+    if (!base64 || base64.trim().length === 0) {
       return NextResponse.json(
         { error: "Dados da imagem inválidos." },
         { status: 400 }
       );
     }
 
-    let buffer: Buffer;
-    try {
-      buffer = Buffer.from(base64, "base64");
-      // Validar se o buffer é válido (tamanho mínimo para PNG)
-      if (buffer.length < 100) {
-        throw new Error("Buffer muito pequeno para ser uma imagem válida");
-      }
-    } catch (bufferError) {
-      console.error("Erro ao converter base64 para buffer:", bufferError);
-      return NextResponse.json(
-        { error: "Erro ao processar dados da imagem." },
-        { status: 400 }
-      );
-    }
-
-    // Criar diretório e salvar arquivo
-    try {
-      const dir = path.join(process.cwd(), "public", "contratos");
-      await fs.mkdir(dir, { recursive: true });
-      const fileName = `professor-${contratoId}.png`;
-      const filePath = path.join(dir, fileName);
-      await fs.writeFile(filePath, buffer);
-      assinaturaUrl = `/contratos/${fileName}`;
-    } catch (fileError) {
-      console.error("Erro ao salvar arquivo:", fileError);
-      return NextResponse.json(
-        { error: "Erro ao salvar arquivo da assinatura." },
-        { status: 500 }
-      );
-    }
+    const buffer = Buffer.from(base64, "base64");
+    const dir = path.join(process.cwd(), "public", "contratos");
+    await fs.mkdir(dir, { recursive: true });
+    const fileName = `professor-${contratoId}.png`;
+    await fs.writeFile(path.join(dir, fileName), buffer);
+    assinaturaUrl = `/contratos/${fileName}`;
   } catch (e) {
-    console.error("Erro geral ao processar assinatura:", e);
+    console.error("Erro ao processar assinatura do professor:", e);
     return NextResponse.json(
       { error: "Erro ao processar assinatura do professor." },
       { status: 400 }
@@ -121,13 +71,6 @@ export async function POST(
   }
 
   try {
-    if (!assinaturaUrl) {
-      return NextResponse.json(
-        { error: "URL da assinatura não foi gerada." },
-        { status: 500 }
-      );
-    }
-
     await prisma.contrato.update({
       where: { id: contratoId },
       data: {
@@ -138,10 +81,8 @@ export async function POST(
     });
   } catch (e) {
     console.error("POST /api/contratos/[id]/assinatura-professor (update):", e);
-    const errorMessage = e instanceof Error ? e.message : "Erro desconhecido";
-    console.error("Detalhes do erro:", errorMessage);
     return NextResponse.json(
-      { error: `Erro ao salvar no banco: ${errorMessage}` },
+      { error: "Erro ao salvar assinatura. Verifique a conexão com o banco." },
       { status: 500 }
     );
   }

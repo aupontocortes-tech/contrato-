@@ -402,11 +402,35 @@ export function AssinaturaProfessorModal({
         }
         assinaturaDataUrl = imagemUrl;
       } else {
-        if (!desenhou || !canvasRef.current) {
-          toast.error("Desenhe sua assinatura");
+        if (!canvasRef.current) {
+          toast.error("Erro: Canvas não encontrado");
+          setSalvando(false);
           return;
         }
-        assinaturaDataUrl = canvasRef.current.toDataURL("image/png");
+        if (!desenhou) {
+          toast.error("Desenhe sua assinatura");
+          setSalvando(false);
+          return;
+        }
+        try {
+          assinaturaDataUrl = canvasRef.current.toDataURL("image/png");
+          if (!assinaturaDataUrl || assinaturaDataUrl === "data:,") {
+            toast.error("Erro ao gerar imagem da assinatura");
+            setSalvando(false);
+            return;
+          }
+        } catch (canvasError) {
+          console.error("Erro ao gerar imagem do canvas:", canvasError);
+          toast.error("Erro ao gerar imagem da assinatura");
+          setSalvando(false);
+          return;
+        }
+      }
+
+      if (!assinaturaDataUrl) {
+        toast.error("Erro: Assinatura não foi gerada");
+        setSalvando(false);
+        return;
       }
 
       const res = await fetch(`/api/contratos/${contratoId}/assinatura-professor`, {
