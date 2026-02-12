@@ -89,12 +89,15 @@ export function AssinaturaProfessorModal({
           }
           
           // Restaurar imagem se existir
-          if (canvasImageRef.current) {
+          if (canvasImageRef.current && ctx) {
             const img = new Image();
             img.onload = () => {
-              ctx.clearRect(0, 0, canvas.width, canvas.height);
-              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-              setDesenhou(true);
+              const currentCtx = canvas.getContext("2d");
+              if (currentCtx) {
+                currentCtx.clearRect(0, 0, canvas.width, canvas.height);
+                currentCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                setDesenhou(true);
+              }
             };
             img.src = canvasImageRef.current;
           }
@@ -135,12 +138,15 @@ export function AssinaturaProfessorModal({
           }
           
           // Restaurar imagem se existir
-          if (canvasImageRef.current) {
+          if (canvasImageRef.current && ctx) {
             const img = new Image();
             img.onload = () => {
-              ctx.clearRect(0, 0, canvas.width, canvas.height);
-              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-              setDesenhou(true);
+              const currentCtx = canvas.getContext("2d");
+              if (currentCtx) {
+                currentCtx.clearRect(0, 0, canvas.width, canvas.height);
+                currentCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                setDesenhou(true);
+              }
             };
             img.src = canvasImageRef.current;
           }
@@ -378,9 +384,12 @@ export function AssinaturaProfessorModal({
     
     const img = new Image();
     img.onload = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      setDesenhou(true);
+      const currentCtx = canvas.getContext("2d");
+      if (currentCtx) {
+        currentCtx.clearRect(0, 0, canvas.width, canvas.height);
+        currentCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        setDesenhou(true);
+      }
     };
     img.src = canvasImageRef.current;
   }, []);
