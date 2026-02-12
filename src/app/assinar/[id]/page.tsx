@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DocumentoContrato } from "@/components/DocumentoContrato";
 import { toast } from "sonner";
-import { PenLine, Eraser, Upload, RotateCw } from "lucide-react";
+import { PenLine, Eraser, Upload, RotateCw, Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -465,13 +465,24 @@ export default function AssinarPage() {
   }
 
   if (contrato.status === "assinado") {
+    const handleDownload = () => {
+      window.open(`/api/contratos/${id}/download-pdf`, "_blank");
+    };
+
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-muted/30">
         <Card className="w-full max-w-md">
-          <CardContent className="pt-6">
+          <CardContent className="pt-6 space-y-4">
             <p className="text-green-600 font-medium text-center">
-              Este contrato já foi assinado.
+              Contrato assinado com sucesso!
             </p>
+            <p className="text-sm text-muted-foreground text-center">
+              Você pode baixar uma cópia do contrato assinado abaixo.
+            </p>
+            <Button onClick={handleDownload} className="w-full" size="lg">
+              <Download className="size-5 mr-2" />
+              Baixar Contrato Assinado (PDF)
+            </Button>
           </CardContent>
         </Card>
       </div>
