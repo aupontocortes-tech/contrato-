@@ -30,15 +30,35 @@ export async function DELETE(
       );
     }
 
-    // Não verificar contratos - excluir sempre, mesmo que tenha contratos associados
-
+    // Excluir contratos associados primeiro, depois o aluno
     try {
+      // Excluir todos os contratos do aluno primeiro
+      await prisma.contrato.deleteMany({
+        where: { aluno_id: alunoId },
+      });
+
+      // Agora excluir o aluno
       await prisma.aluno.delete({ where: { id: alunoId } });
       return NextResponse.json({ ok: true });
     } catch (e: any) {
       console.error("DELETE /api/alunos/[id]:", e);
       if (e.code === "P2025") {
         return NextResponse.json({ error: "Aluno não encontrado" }, { status: 404 });
+      }
+      // Erro de constraint de chave estrangeira
+      if (e.code === "P2003") {
+        // Tentar excluir contratos novamente e depois o aluno
+        try {
+          await prisma.contrato.deleteMany({ where: { aluno_id: alunoId } });
+          await prisma.aluno.delete({ where: { id: alunoId } });
+          return NextResponse.json({ ok: true });
+        } catch (retryError: any) {
+          console.error("Erro ao excluir após retry:", retryError);
+          return NextResponse.json(
+            { error: "Erro ao excluir aluno. Tente novamente." },
+            { status: 500 }
+          );
+        }
       }
       return NextResponse.json(
         { error: "Erro ao excluir aluno. Verifique a conexão com o banco." },
