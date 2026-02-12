@@ -11,7 +11,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Trash2 } from "lucide-react";
 
@@ -53,8 +52,8 @@ export function ExcluirAlunoModal({
       return;
     }
 
-    if (!["1", "2", "3", "4"].includes(codigoLimpo)) {
-      toast.error("Código inválido. Digite 1, 2, 3 ou 4");
+    if (codigoLimpo !== "00" && codigoLimpo !== "0000") {
+      toast.error("Código inválido. Digite 00 ou 0000");
       return;
     }
 
@@ -117,9 +116,9 @@ export function ExcluirAlunoModal({
 
         <div className="py-4 space-y-2">
           <Label htmlFor="codigo" className="text-sm font-medium">
-            Digite o código de confirmação (1, 2, 3 ou 4):
+            Digite o código de confirmação (00 ou 0000):
           </Label>
-          <Input
+          <input
             ref={inputRef}
             id="codigo"
             type="text"
@@ -127,32 +126,24 @@ export function ExcluirAlunoModal({
             value={codigo}
             onChange={(e) => {
               const value = e.target.value;
-              // Aceitar apenas números de 1 a 4
-              if (value === "") {
-                setCodigo("");
-              } else {
-                // Pegar apenas o último caractere se for 1, 2, 3 ou 4
-                const lastChar = value.slice(-1);
-                if (["1", "2", "3", "4"].includes(lastChar)) {
-                  setCodigo(lastChar);
-                } else {
-                  // Se não for válido, manter o valor anterior
-                  setCodigo(codigo);
-                }
-              }
+              // Aceitar apenas números
+              const numericValue = value.replace(/[^0-9]/g, "");
+              // Limitar a 4 caracteres
+              const limitedValue = numericValue.slice(0, 4);
+              setCodigo(limitedValue);
             }}
             onKeyDown={(e) => {
               // Permitir Enter apenas se houver código válido
-              if (e.key === "Enter" && codigo && ["1", "2", "3", "4"].includes(codigo)) {
+              if (e.key === "Enter" && (codigo === "00" || codigo === "0000")) {
                 e.preventDefault();
                 handleExcluir();
               }
             }}
-            placeholder="Digite 1, 2, 3 ou 4"
-            maxLength={1}
+            placeholder="Digite 00 ou 0000"
+            maxLength={4}
             autoFocus
             disabled={excluindo}
-            className="text-center text-2xl font-bold"
+            className="text-center text-2xl font-bold w-full h-9 rounded-md border border-gray-300 bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-blue-500 focus-visible:ring-blue-500/50 focus-visible:ring-[3px] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50"
             style={{ letterSpacing: "0.1em" }}
           />
         </div>
@@ -171,7 +162,7 @@ export function ExcluirAlunoModal({
           <Button
             variant="destructive"
             onClick={handleExcluir}
-            disabled={excluindo || !codigo || !["1", "2", "3", "4"].includes(codigo.trim())}
+            disabled={excluindo || !codigo || (codigo !== "00" && codigo !== "0000")}
           >
             {excluindo ? "Excluindo..." : "Excluir"}
           </Button>
