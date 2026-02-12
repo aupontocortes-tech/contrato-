@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -32,6 +32,18 @@ export function ExcluirAlunoModal({
 }: ExcluirAlunoModalProps) {
   const [codigo, setCodigo] = useState("");
   const [excluindo, setExcluindo] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Limpar código quando o modal abrir
+  useEffect(() => {
+    if (open) {
+      setCodigo("");
+      // Focar no input após um pequeno delay para garantir que o modal está renderizado
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+    }
+  }, [open]);
 
   async function handleExcluir() {
     if (!codigo.trim()) {
@@ -93,24 +105,38 @@ export function ExcluirAlunoModal({
             Digite o código de confirmação (1, 2, 3 ou 4):
           </Label>
           <Input
+            ref={inputRef}
             id="codigo"
             type="text"
+            inputMode="numeric"
             value={codigo}
             onChange={(e) => {
-              const value = e.target.value;
+              const value = e.target.value.trim();
               // Aceitar apenas números de 1 a 4
-              if (value === "" || ["1", "2", "3", "4"].includes(value)) {
+              if (value === "") {
+                setCodigo("");
+              } else if (/^[1-4]$/.test(value)) {
                 setCodigo(value);
+              }
+            }}
+            onKeyPress={(e) => {
+              // Permitir apenas números de 1 a 4
+              if (!/^[1-4]$/.test(e.key) && e.key !== "Enter" && e.key !== "Backspace" && e.key !== "Delete") {
+                e.preventDefault();
               }
             }}
             placeholder="Digite 1, 2, 3 ou 4"
             maxLength={1}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && codigo.trim()) {
+              if (e.key === "Enter" && codigo.trim() && ["1", "2", "3", "4"].includes(codigo.trim())) {
+                e.preventDefault();
                 handleExcluir();
               }
             }}
             autoFocus
+            disabled={excluindo}
+            className="text-center text-2xl font-bold"
+            style={{ letterSpacing: "0.1em" }}
           />
         </div>
 
