@@ -1,5 +1,5 @@
 // Service Worker básico para PWA
-const CACHE_NAME = 'contraton-v2'; // Incrementado para forçar atualização
+const CACHE_NAME = 'contraton-v3'; // Incrementado para forçar atualização
 const urlsToCache = [
   '/',
   '/dashboard',
