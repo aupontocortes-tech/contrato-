@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Upload, PenLine, X } from "lucide-react";
+import { Upload, PenLine, X, RotateCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -31,6 +31,8 @@ export function AssinaturaProfessorModal({
   const [salvando, setSalvando] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
+  const desenhandoRef = useRef(false);
+  const [isLandscape, setIsLandscape] = useState(false);
 
   useEffect(() => {
     if (open && modo === "manual" && canvasRef.current) {
@@ -38,12 +40,92 @@ export function AssinaturaProfessorModal({
       const ctx = canvas.getContext("2d");
       if (ctx) {
         ctx.strokeStyle = "#000";
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 3;
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
       }
+      // Ajustar tamanho do canvas baseado no container
+      const resizeCanvas = () => {
+        if (!canvas || !canvas.parentElement) return;
+        const container = canvas.parentElement;
+        const containerWidth = container.clientWidth - 32; // padding
+        const aspectRatio = isLandscape ? 800 / 400 : 800 / 300;
+        const containerHeight = containerWidth / aspectRatio;
+        canvas.style.width = `${containerWidth}px`;
+        canvas.style.height = `${containerHeight}px`;
+      };
+      resizeCanvas();
+      window.addEventListener("resize", resizeCanvas);
+      return () => window.removeEventListener("resize", resizeCanvas);
     }
-  }, [open, modo]);
+  }, [open, modo, isLandscape]);
+
+  // Limpar canvas quando modal fechar
+  useEffect(() => {
+    if (!open) {
+      setDesenhou(false);
+      setIsLandscape(false);
+      if (canvasRef.current) {
+        const ctx = canvasRef.current.getContext("2d");
+        if (ctx) {
+          ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+        }
+      }
+    }
+  }, [open]);
+
+  // Função para obter coordenadas tanto de mouse quanto de touch
+  const getCoords = useCallback((e: React.TouchEvent<HTMLCanvasElement> | React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width === 0) return { x: 0, y: 0 };
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    if ("touches" in e && e.touches.length > 0) {
+      return {
+        x: (e.touches[0].clientX - rect.left) * scaleX,
+        y: (e.touches[0].clientY - rect.top) * scaleY,
+      };
+    }
+    return {
+      x: ((e as React.MouseEvent<HTMLCanvasElement>).clientX - rect.left) * scaleX,
+      y: ((e as React.MouseEvent<HTMLCanvasElement>).clientY - rect.top) * scaleY,
+    };
+  }, []);
+
+  // Função para rotacionar a tela para horizontal
+  const toggleLandscape = useCallback(async () => {
+    try {
+      if (!isLandscape) {
+        // Tentar usar Screen Orientation API
+        if (screen.orientation && (screen.orientation as any).lock) {
+          await (screen.orientation as any).lock("landscape");
+          setIsLandscape(true);
+          toast.success("Tela rotacionada para horizontal");
+        } else {
+          // Fallback: mostrar instrução
+          toast.info("Por favor, rotacione seu dispositivo manualmente para horizontal");
+          setIsLandscape(true);
+        }
+      } else {
+        // Voltar para portrait
+        if (screen.orientation && (screen.orientation as any).unlock) {
+          (screen.orientation as any).unlock();
+          setIsLandscape(false);
+          toast.success("Tela voltou para vertical");
+        } else {
+          toast.info("Por favor, rotacione seu dispositivo manualmente para vertical");
+          setIsLandscape(false);
+        }
+      }
+    } catch (error) {
+      // Se não conseguir bloquear, pelo menos mostra a instrução
+      toast.info("Por favor, rotacione seu dispositivo manualmente");
+      setIsLandscape(!isLandscape);
+    }
+  }, [isLandscape]);
 
   function handlePaste(e: React.ClipboardEvent) {
     e.preventDefault();
@@ -74,33 +156,37 @@ export function AssinaturaProfessorModal({
     }
   }
 
-  function startDrawing(e: React.MouseEvent<HTMLCanvasElement>) {
+  const startDrawing = useCallback((e: React.TouchEvent<HTMLCanvasElement> | React.MouseEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
     if (!canvasRef.current) return;
     const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-
-    setIsDrawing(true);
+    
+    const { x, y } = getCoords(e);
     ctx.beginPath();
-    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
-  }
+    ctx.moveTo(x, y);
+    setIsDrawing(true);
+    desenhandoRef.current = true;
+  }, [getCoords]);
 
-  function draw(e: React.MouseEvent<HTMLCanvasElement>) {
-    if (!isDrawing || !canvasRef.current) return;
+  const draw = useCallback((e: React.TouchEvent<HTMLCanvasElement> | React.MouseEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    if (!desenhandoRef.current || !isDrawing || !canvasRef.current) return;
     const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    const { x, y } = getCoords(e);
+    ctx.lineTo(x, y);
     ctx.stroke();
     setDesenhou(true);
-  }
+  }, [isDrawing, getCoords]);
 
-  function stopDrawing() {
+  const stopDrawing = useCallback(() => {
     setIsDrawing(false);
-  }
+    desenhandoRef.current = false;
+  }, []);
 
   function limparCanvas() {
     if (!canvasRef.current) return;
@@ -242,16 +328,34 @@ export function AssinaturaProfessorModal({
           {/* Modo Manual */}
           {modo === "manual" && (
             <div className="space-y-4">
-              <div className="border-2 border-gray-300 rounded-lg p-4 bg-white">
+              <div className="flex justify-between items-center">
+                <Label>Desenhe sua assinatura com o dedo</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={toggleLandscape}
+                  className="flex items-center gap-2"
+                >
+                  <RotateCw className="h-4 w-4" />
+                  {isLandscape ? "Vertical" : "Horizontal"}
+                </Button>
+              </div>
+              <div className="border-2 border-gray-300 rounded-lg p-4 bg-white touch-none">
                 <canvas
                   ref={canvasRef}
-                  width={500}
-                  height={200}
-                  className="w-full border border-gray-200 rounded cursor-crosshair"
+                  width={800}
+                  height={isLandscape ? 400 : 300}
+                  className="w-full border border-gray-200 rounded cursor-crosshair touch-none"
+                  style={{ touchAction: "none" }}
                   onMouseDown={startDrawing}
                   onMouseMove={draw}
                   onMouseUp={stopDrawing}
                   onMouseLeave={stopDrawing}
+                  onTouchStart={startDrawing}
+                  onTouchMove={draw}
+                  onTouchEnd={stopDrawing}
+                  onTouchCancel={stopDrawing}
                 />
               </div>
               <Button
