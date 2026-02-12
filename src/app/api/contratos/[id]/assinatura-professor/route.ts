@@ -48,12 +48,45 @@ export async function POST(
     }
 
     // Salvar arquivo
+    // Em Vercel (serverless), não podemos criar diretórios em runtime
+    // Vamos tentar salvar diretamente, assumindo que o diretório existe ou será criado
     const buffer = Buffer.from(base64, "base64");
     const dir = path.join(process.cwd(), "public", "contratos");
-    await fs.mkdir(dir, { recursive: true });
     const fileName = `professor-${contratoId}.png`;
     const filePath = path.join(dir, fileName);
-    await fs.writeFile(filePath, buffer);
+    
+    // Tentar criar diretório e salvar arquivo
+    try {
+      // Criar diretório se não existir (funciona em desenvolvimento)
+      await fs.mkdir(dir, { recursive: true });
+      await fs.writeFile(filePath, buffer);
+    } catch (error: any) {
+      // Se falhar, pode ser ambiente serverless (Vercel)
+      // Em produção, o diretório deve existir no build
+      console.error("Erro ao salvar arquivo:", error);
+      
+      // Se o erro for de diretório não encontrado, tentar criar novamente
+      if (error.code === "ENOENT") {
+        try {
+          // Tentar criar o diretório novamente
+          await fs.mkdir(dir, { recursive: true });
+          await fs.writeFile(filePath, buffer);
+        } catch (retryError: any) {
+          console.error("Erro ao tentar novamente:", retryError);
+          // Se ainda falhar, retornar erro claro
+          return NextResponse.json(
+            { error: "Erro ao salvar assinatura. O diretório não pôde ser criado. Verifique as configurações do servidor." },
+            { status: 500 }
+          );
+        }
+      } else {
+        return NextResponse.json(
+          { error: `Erro ao salvar assinatura: ${error.message || "Erro desconhecido"}` },
+          { status: 500 }
+        );
+      }
+    }
+    
     const assinaturaUrl = `/contratos/${fileName}`;
 
     // Atualizar banco de dados
