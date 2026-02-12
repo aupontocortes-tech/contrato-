@@ -384,50 +384,54 @@ export default function ContratosPage() {
                         )}
                       </div>
                     </div>
-                    <div style={{ paddingTop: "8px", borderTop: "1px solid #f3f4f6", display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-                      <span style={{ fontSize: "12px", fontWeight: 500, color: "#6b7280" }}>Assinatura do Professor:</span>
-                      {c.assinatura_professor_url ? (
-                        <>
-                          <img
-                            src={c.assinatura_professor_url}
-                            alt="Assinatura do professor"
-                            style={{ height: "48px", border: "1px solid #e5e7eb", borderRadius: "4px", backgroundColor: "#fff" }}
-                          />
+                    <div style={{ paddingTop: "8px", borderTop: "1px solid #f3f4f6" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap", marginBottom: "8px" }}>
+                        <span style={{ fontSize: "12px", fontWeight: 500, color: "#6b7280" }}>Assinatura do Professor:</span>
+                        {c.assinatura_professor_url ? (
+                          <>
+                            <img
+                              src={c.assinatura_professor_url}
+                              alt="Assinatura do professor"
+                              style={{ height: "48px", border: "1px solid #e5e7eb", borderRadius: "4px", backgroundColor: "#fff" }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setContratoParaAssinar(c.id);
+                                setModalAssinaturaOpen(true);
+                              }}
+                              style={{ ...btnSecondary, padding: "4px 8px", fontSize: "12px" }}
+                            >
+                              Alterar
+                            </button>
+                          </>
+                        ) : (
                           <button
                             type="button"
+                            disabled={!c.link_assinatura}
                             onClick={() => {
                               setContratoParaAssinar(c.id);
                               setModalAssinaturaOpen(true);
                             }}
-                            style={{ ...btnSecondary, padding: "4px 8px", fontSize: "12px" }}
+                            style={btnSecondary}
                           >
-                            Alterar
+                            {c.link_assinatura ? "Assinar" : "Aguardando geração"}
                           </button>
-                        </>
-                      ) : (
+                        )}
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "flex-start", width: "100%" }}>
                         <button
                           type="button"
-                          disabled={!c.link_assinatura}
                           onClick={() => {
-                            setContratoParaAssinar(c.id);
-                            setModalAssinaturaOpen(true);
+                            setContratoParaExcluir(c.id);
+                            setCodigoExcluir("");
+                            setModalExcluirOpen(true);
                           }}
-                          style={btnSecondary}
+                          style={{ ...btnSecondary, color: "#b91c1c", borderColor: "#b91c1c", minWidth: "auto", width: "auto" }}
                         >
-                          {c.link_assinatura ? "Assinar" : "Aguardando geração"}
+                          Excluir
                         </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setContratoParaExcluir(c.id);
-                          setCodigoExcluir("");
-                          setModalExcluirOpen(true);
-                        }}
-                        style={{ ...btnSecondary, color: "#b91c1c", borderColor: "#b91c1c" }}
-                      >
-                        Excluir
-                      </button>
+                      </div>
                     </div>
                   </div>
                 </div>
