@@ -116,6 +116,7 @@ export function ExcluirAlunoModal({
             id="codigo"
             type="text"
             inputMode="numeric"
+            pattern="[1-4]"
             value={codigo}
             onChange={(e) => {
               const value = e.target.value;
@@ -123,10 +124,20 @@ export function ExcluirAlunoModal({
               if (value === "") {
                 setCodigo("");
               } else {
-                const lastChar = value.charAt(value.length - 1);
+                // Pegar apenas o último caractere digitado
+                const lastChar = value.slice(-1);
+                // Verificar se é 1, 2, 3 ou 4
                 if (lastChar === "1" || lastChar === "2" || lastChar === "3" || lastChar === "4") {
                   setCodigo(lastChar);
                 }
+                // Se não for válido, não atualizar (manter o valor anterior)
+              }
+            }}
+            onKeyPress={(e) => {
+              // Permitir apenas números de 1 a 4
+              const key = e.key;
+              if (!["1", "2", "3", "4", "Enter", "Backspace", "Delete"].includes(key)) {
+                e.preventDefault();
               }
             }}
             onKeyDown={(e) => {
