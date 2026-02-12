@@ -51,8 +51,8 @@ export function ExcluirAlunoModal({
       return;
     }
 
-    if (!["1", "2", "3", "4"].includes(codigoLimpo)) {
-      toast.error("Código inválido. Digite 1, 2, 3 ou 4");
+    if (codigoLimpo !== "1234") {
+      toast.error("Código inválido. Digite 1234");
       return;
     }
 
@@ -109,7 +109,7 @@ export function ExcluirAlunoModal({
 
         <div className="py-4 space-y-2">
           <Label htmlFor="codigo" className="text-sm font-medium">
-            Digite o código de confirmação (1, 2, 3 ou 4):
+            Digite o código de confirmação (1234):
           </Label>
           <input
             ref={inputRef}
@@ -121,23 +121,20 @@ export function ExcluirAlunoModal({
               let value = e.target.value;
               // Remover qualquer caractere que não seja número
               value = value.replace(/[^0-9]/g, "");
-              // Limitar a 1 caractere
-              if (value.length > 1) {
-                value = value.slice(-1);
+              // Limitar a 4 caracteres
+              if (value.length > 4) {
+                value = value.slice(0, 4);
               }
-              // Aceitar apenas números de 1 a 4
-              if (value === "" || value === "1" || value === "2" || value === "3" || value === "4") {
-                setCodigo(value);
-              }
+              setCodigo(value);
             }}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && codigo && ["1", "2", "3", "4"].includes(codigo)) {
+              if (e.key === "Enter" && codigo === "1234") {
                 e.preventDefault();
                 handleExcluir();
               }
             }}
-            placeholder="Digite 1, 2, 3 ou 4"
-            maxLength={1}
+            placeholder="Digite 1234"
+            maxLength={4}
             autoFocus
             disabled={excluindo}
             className="text-center text-2xl font-bold w-full h-9 rounded-md border border-gray-300 bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-blue-500 focus-visible:ring-blue-500/50 focus-visible:ring-[3px] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50"
@@ -159,7 +156,7 @@ export function ExcluirAlunoModal({
           <Button
             variant="destructive"
             onClick={handleExcluir}
-            disabled={excluindo || !codigo || !["1", "2", "3", "4"].includes(codigo)}
+            disabled={excluindo || codigo !== "1234"}
           >
             {excluindo ? "Excluindo..." : "Excluir"}
           </Button>
