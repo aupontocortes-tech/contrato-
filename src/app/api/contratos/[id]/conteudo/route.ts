@@ -48,6 +48,8 @@ export async function GET(
       link_assinatura: contrato.link_assinatura,
       assinatura_url: contrato.assinatura_url,
       data_assinatura: contrato.data_assinatura?.toISOString() ?? null,
+      assinatura_professor_url: contrato.assinatura_professor_url,
+      data_assinatura_professor: contrato.data_assinatura_professor?.toISOString() ?? null,
       aluno: contrato.aluno,
       plano: contrato.plano,
     },

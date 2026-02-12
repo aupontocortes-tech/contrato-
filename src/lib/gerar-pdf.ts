@@ -86,7 +86,8 @@ export async function gerarPdfFromContrato(contrato: ContratoEstruturado): Promi
   }
 
   // Título (centralizado, caixa alta, fonte serifada elegante)
-  const tituloLines = wrapText(contrato.titulo);
+  const tituloText = contrato.titulo.includes("\n") ? contrato.titulo : contrato.titulo;
+  const tituloLines = tituloText.split("\n").flatMap(ln => wrapText(ln));
   for (const ln of tituloLines) {
     const tw = fontBold.widthOfTextAtSize(ln, FONT_SIZE_TITLE);
     page.drawText(ln, {

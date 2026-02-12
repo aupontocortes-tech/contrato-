@@ -14,9 +14,12 @@ type ContratoEstruturado = {
   identificacaoTexto: string;
   nomeContratante: string;
   cpfContratante: string;
+  telefone?: string | null;
+  email?: string;
   clausulas: Array<{ numero: string; titulo: string; texto: string }>;
   assinaturaContratada: string;
   assinaturaContratante: string;
+  blocoAssinaturaDigital?: string;
 };
 
 type Contrato = {
@@ -246,9 +249,20 @@ export default function AssinarPage() {
         <div className="max-w-2xl mx-auto">
           <DocumentoContrato compact>
               <h1 className="text-lg md:text-xl font-bold text-center leading-tight uppercase tracking-tight text-neutral-900">
-                {conteudo.titulo.replace(/\s+DE\s+PERSONAL\s+TRAINER$/i, "").trim()}
-                <br />
-                <span className="text-base md:text-lg">DE PERSONAL TRAINER</span>
+                {conteudo.titulo.includes("\n") ? (
+                  conteudo.titulo.split("\n").map((line, i) => (
+                    <span key={i}>
+                      {line}
+                      {i < conteudo.titulo.split("\n").length - 1 && <br />}
+                    </span>
+                  ))
+                ) : (
+                  <>
+                    {conteudo.titulo.replace(/\s+DE\s+PERSONAL\s+TRAINER$/i, "").trim()}
+                    <br />
+                    <span className="text-base md:text-lg">DE PERSONAL TRAINER</span>
+                  </>
+                )}
               </h1>
               <p className="text-center mt-4 mb-6" aria-hidden> </p>
               <section className="mb-6 text-left">
@@ -264,6 +278,16 @@ export default function AssinarPage() {
                 <p className="text-sm text-neutral-800">
                   <strong className="font-semibold">CPF:</strong> {conteudo.cpfContratante}
                 </p>
+                {conteudo.telefone && (
+                  <p className="text-sm text-neutral-800">
+                    <strong className="font-semibold">Telefone:</strong> {conteudo.telefone}
+                  </p>
+                )}
+                {conteudo.email && (
+                  <p className="text-sm text-neutral-800">
+                    <strong className="font-semibold">E-mail:</strong> {conteudo.email}
+                  </p>
+                )}
               </section>
               <div className="space-y-4 text-left">
                 {conteudo.clausulas.map((cl) => (

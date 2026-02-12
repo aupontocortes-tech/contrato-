@@ -16,7 +16,7 @@ const CLAUSULAS_PRESENCIAL = [
   { numero: "11ª", titulo: "USO DE IMAGEM", texto: "Ao assinar este contrato, o CONTRATANTE autoriza automaticamente o uso de sua imagem para fins profissionais da CONTRATADA." },
 ];
 
-/** Cláusulas do contrato de Consultoria Online (conteúdo do PDF enviado). */
+/** Cláusulas do contrato de Consultoria Online (conteúdo exato do PDF enviado). */
 const CLAUSULAS_CONSULTORIA_ONLINE = [
   { numero: "1ª", titulo: "DO OBJETO", texto: "Prestação de serviços de consultoria online em treinamento físico, incluindo prescrição, ajustes, acompanhamento remoto e suporte, sem a realização de aulas presenciais e sem garantia de resultados." },
   { numero: "2ª", titulo: "DAS OBRIGAÇÕES DA CONTRATADA", texto: "Elaborar treinos personalizados, realizar ajustes conforme evolução do aluno e oferecer suporte online dentro dos canais e horários definidos." },
@@ -84,11 +84,11 @@ export type ContratoEstruturado = {
 
 function getContratoConsultoriaOnline(params: ContratoParams): ContratoEstruturado {
   return {
-    titulo: "CONTRATO DE CONSULTORIA ONLINE",
+    titulo: "CONTRATO DE CONSULTORIA ONLINE\nPrestação de Serviços de Personal Trainer",
     logoPlaceholder: "SUA LOGO AQUI",
     contratadaNome: CONTRATADA_NOME,
     contratadaTitulo: CONTRATADA_TITULO,
-    identificacaoTexto: `CONTRATADA: ${CONTRATADA_NOME}, ${CONTRATADA_TITULO}. CONTRATANTE:`,
+    identificacaoTexto: `CONTRATADA: ${CONTRATADA_NOME}, ${CONTRATADA_TITULO}.\nCONTRATANTE:`,
     nomeContratante: params.nomeAluno,
     cpfContratante: params.cpf,
     telefone: params.telefone ?? null,
@@ -97,7 +97,7 @@ function getContratoConsultoriaOnline(params: ContratoParams): ContratoEstrutura
     vigenciaClausula12: "Contrato com vigência por prazo indeterminado, válido até solicitação formal de cancelamento.",
     assinaturaContratada: CONTRATADA_NOME,
     assinaturaContratante: "CONTRATANTE",
-    blocoAssinaturaDigital: "Local e data: _______________________________________________\n\nASSINATURA DIGITAL (WhatsApp):\nDeclaro que li e concordo com todos os termos deste contrato.",
+    blocoAssinaturaDigital: "Data: _______________________________________________\n\nASSINATURA DIGITAL (WhatsApp):\nDeclaro que li e concordo com todos os termos deste contrato.",
   };
 }
 
