@@ -15,12 +15,22 @@ export function InstallPrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
     // Verifica se já está instalado
     if (window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone) {
       setIsStandalone(true);
       return;
+    }
+
+    // Verifica se o usuário já dispensou o prompt (usando localStorage)
+    const dismissedKey = "install-prompt-dismissed";
+    const dismissedTime = localStorage.getItem(dismissedKey);
+    const wasDismissed = dismissedTime && Date.now() - parseInt(dismissedTime) < 7 * 24 * 60 * 60 * 1000; // 7 dias
+    
+    if (wasDismissed) {
+      setDismissed(true);
     }
 
     // Detecta iOS
@@ -31,19 +41,21 @@ export function InstallPrompt() {
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
+      // Sempre mostra se tiver o evento, mesmo que tenha sido dispensado antes
       setShowPrompt(true);
+      setDismissed(false);
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
 
-    // Mostra prompt após 3 segundos se não for iOS
-    if (!iOS) {
+    // Mostra prompt após 2 segundos se não for iOS e não foi dispensado recentemente
+    if (!iOS && !wasDismissed) {
       const timer = setTimeout(() => {
         setShowPrompt(true);
-      }, 3000);
+      }, 2000);
       return () => clearTimeout(timer);
-    } else {
-      // Para iOS, sempre mostra instruções
+    } else if (iOS && !wasDismissed) {
+      // Para iOS, sempre mostra instruções se não foi dispensado
       setShowPrompt(true);
     }
 
@@ -53,18 +65,28 @@ export function InstallPrompt() {
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-
-    if (outcome === "accepted") {
-      setShowPrompt(false);
-      setDeferredPrompt(null);
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === "accepted") {
+        setShowPrompt(false);
+        setDeferredPrompt(null);
+      }
+    } else {
+      // Fallback: instruções manuais para Android
+      if (!isIOS) {
+        alert("Para instalar:\n1. Toque no menu (3 pontos)\n2. Selecione 'Adicionar à tela inicial'\n3. Toque em 'Adicionar'");
+      }
     }
   };
 
-  if (isStandalone || !showPrompt) return null;
+  const handleDismiss = () => {
+    setShowPrompt(false);
+    setDismissed(true);
+    localStorage.setItem("install-prompt-dismissed", Date.now().toString());
+  };
+
+  if (isStandalone || (!showPrompt && dismissed)) return null;
 
   return (
     <Card className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-50 shadow-lg border-2 border-primary/20 animate-in slide-in-from-bottom-4">
@@ -85,7 +107,7 @@ export function InstallPrompt() {
             variant="ghost"
             size="icon"
             className="h-6 w-6"
-            onClick={() => setShowPrompt(false)}
+            onClick={handleDismiss}
           >
             <X className="h-4 w-4" />
           </Button>
@@ -114,10 +136,22 @@ export function InstallPrompt() {
             <p className="text-sm text-muted-foreground">
               Instale o Contraton no seu dispositivo para acesso rápido e uso offline.
             </p>
-            <Button onClick={handleInstallClick} className="w-full" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Instalar Agora
-            </Button>
+            {deferredPrompt ? (
+              <Button onClick={handleInstallClick} className="w-full" size="sm">
+                <Download className="h-4 w-4 mr-2" />
+                Instalar Agora
+              </Button>
+            ) : (
+              <div className="space-y-2">
+                <Button onClick={handleInstallClick} className="w-full" size="sm" variant="outline">
+                  <Download className="h-4 w-4 mr-2" />
+                  Instalar Manualmente
+                </Button>
+                <p className="text-xs text-muted-foreground text-center">
+                  Toque no menu (⋮) → "Adicionar à tela inicial"
+                </p>
+              </div>
+            )}
             <p className="text-xs text-muted-foreground text-center">
               Funciona em Android e Desktop
             </p>

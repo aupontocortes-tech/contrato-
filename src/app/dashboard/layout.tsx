@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { InstallPrompt } from "@/components/install-prompt";
 
 const linkStyle = (active: boolean) => ({
   display: "block",
@@ -173,6 +174,7 @@ export default function DashboardLayout({
           <div style={{ maxWidth: "1152px", margin: "0 auto" }}>{children}</div>
         </main>
       </div>
+      <InstallPrompt />
     </div>
   );
 }
