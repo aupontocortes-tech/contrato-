@@ -7,28 +7,21 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
-  const contratoId = parseInt(id, 10);
-  if (Number.isNaN(contratoId)) {
-    return NextResponse.json({ error: "ID inválido" }, { status: 400 });
-  }
-
-  let contrato: Awaited<ReturnType<typeof prisma.contrato.findUnique>>;
   try {
-    contrato = await prisma.contrato.findUnique({ where: { id: contratoId } });
-  } catch (e) {
-    console.error("POST /api/contratos/[id]/assinatura-professor:", e);
-    return NextResponse.json(
-      { error: "Não foi possível conectar ao banco. Verifique DATABASE_URL." },
-      { status: 500 }
-    );
-  }
-  if (!contrato) {
-    return NextResponse.json({ error: "Contrato não encontrado" }, { status: 404 });
-  }
+    const { id } = await params;
+    const contratoId = parseInt(id, 10);
+    
+    if (Number.isNaN(contratoId)) {
+      return NextResponse.json({ error: "ID inválido" }, { status: 400 });
+    }
 
-  let assinaturaUrl: string | null = null;
-  try {
+    // Buscar contrato
+    const contrato = await prisma.contrato.findUnique({ where: { id: contratoId } });
+    if (!contrato) {
+      return NextResponse.json({ error: "Contrato não encontrado" }, { status: 404 });
+    }
+
+    // Processar assinatura
     const body = await request.json();
     const assinatura = body?.assinatura as string | undefined;
     
@@ -39,13 +32,11 @@ export async function POST(
       );
     }
 
-    // Processar data URL (formato: data:image/png;base64,...)
+    // Extrair base64
     let base64: string;
     if (assinatura.startsWith("data:image")) {
-      // Extrair base64 - suporta qualquer formato de imagem
       base64 = assinatura.replace(/^data:image\/[a-z]+;base64,/, "");
     } else {
-      // Se não for data URL, assume que já é base64 puro
       base64 = assinatura;
     }
 
@@ -56,23 +47,16 @@ export async function POST(
       );
     }
 
+    // Salvar arquivo
     const buffer = Buffer.from(base64, "base64");
     const dir = path.join(process.cwd(), "public", "contratos");
     await fs.mkdir(dir, { recursive: true });
     const fileName = `professor-${contratoId}.png`;
-    await fs.writeFile(path.join(dir, fileName), buffer);
-    assinaturaUrl = `/contratos/${fileName}`;
-  } catch (e) {
-    console.error("Erro ao processar assinatura do professor:", e);
-    const errorMessage = e instanceof Error ? e.message : String(e);
-    console.error("Detalhes do erro:", errorMessage);
-    return NextResponse.json(
-      { error: `Erro ao processar assinatura: ${errorMessage}` },
-      { status: 400 }
-    );
-  }
+    const filePath = path.join(dir, fileName);
+    await fs.writeFile(filePath, buffer);
+    const assinaturaUrl = `/contratos/${fileName}`;
 
-  try {
+    // Atualizar banco de dados
     await prisma.contrato.update({
       where: { id: contratoId },
       data: {
@@ -81,13 +65,14 @@ export async function POST(
         status: "professor_assinado",
       },
     });
-  } catch (e) {
-    console.error("POST /api/contratos/[id]/assinatura-professor (update):", e);
+
+    return NextResponse.json({ ok: true, assinatura_url: assinaturaUrl });
+  } catch (error) {
+    console.error("Erro ao salvar assinatura do professor:", error);
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
     return NextResponse.json(
-      { error: "Erro ao salvar assinatura. Verifique a conexão com o banco." },
+      { error: `Erro ao salvar assinatura: ${errorMessage}` },
       { status: 500 }
     );
   }
-
-  return NextResponse.json({ ok: true, assinatura_url: assinaturaUrl });
 }

@@ -64,6 +64,10 @@ export function AssinaturaProfessorModal({
           const canvasWidth = availableWidth;
           const canvasHeight = availableHeight;
           
+          // #region agent log
+          fetch('http://127.0.0.1:7244/ingest/64a9c410-e2fc-4943-9e45-90055d9af790',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'assinatura-professor-modal.tsx:resizeCanvas',message:'Resize landscape',data:{viewportWidth,viewportHeight,availableWidth,availableHeight,canvasWidth,canvasHeight},timestamp:Date.now(),runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+          // #endregion
+          
           // Atualizar dimensões reais do canvas (alta resolução)
           canvas.width = canvasWidth;
           canvas.height = canvasHeight;
@@ -105,6 +109,10 @@ export function AssinaturaProfessorModal({
           // Em mobile: altura fixa menor, em desktop: altura maior
           const canvasHeight = isMobile ? 250 : 300;
           const canvasWidth = Math.min(containerWidth, isMobile ? containerWidth : 600);
+          
+          // #region agent log
+          fetch('http://127.0.0.1:7244/ingest/64a9c410-e2fc-4943-9e45-90055d9af790',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'assinatura-professor-modal.tsx:resizeCanvas',message:'Resize portrait',data:{containerWidth,canvasWidth,canvasHeight,isMobile,windowWidth:window.innerWidth},timestamp:Date.now(),runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+          // #endregion
           
           // Atualizar dimensões reais do canvas
           canvas.width = canvasWidth;
@@ -385,6 +393,7 @@ export function AssinaturaProfessorModal({
       if (modo === "colar") {
         if (!imagemUrl) {
           toast.error("Cole ou faça upload de uma imagem de assinatura");
+          setSalvando(false);
           return;
         }
         assinaturaDataUrl = imagemUrl;
@@ -394,14 +403,29 @@ export function AssinaturaProfessorModal({
           setSalvando(false);
           return;
         }
-        if (!desenhou) {
-          toast.error("Desenhe sua assinatura");
+        
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          toast.error("Erro: Contexto do canvas não encontrado");
           setSalvando(false);
           return;
         }
+        
+        // Verificar se há conteúdo desenhado no canvas
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const hasPixels = imageData.data.some((v, i) => i % 4 === 3 && v > 0);
+        
+        if (!hasPixels) {
+          toast.error("Desenhe sua assinatura antes de salvar");
+          setSalvando(false);
+          return;
+        }
+        
         try {
-          assinaturaDataUrl = canvasRef.current.toDataURL("image/png");
-          if (!assinaturaDataUrl || assinaturaDataUrl === "data:,") {
+          assinaturaDataUrl = canvas.toDataURL("image/png");
+          
+          if (!assinaturaDataUrl || assinaturaDataUrl === "data:," || assinaturaDataUrl.length < 100) {
             toast.error("Erro ao gerar imagem da assinatura");
             setSalvando(false);
             return;
@@ -419,8 +443,6 @@ export function AssinaturaProfessorModal({
         setSalvando(false);
         return;
       }
-
-      console.log("Enviando assinatura para API...", { contratoId, tamanho: assinaturaDataUrl.length });
       
       const res = await fetch(`/api/contratos/${contratoId}/assinatura-professor`, {
         method: "POST",
@@ -428,36 +450,16 @@ export function AssinaturaProfessorModal({
         body: JSON.stringify({ assinatura: assinaturaDataUrl }),
       });
 
-      console.log("Resposta da API:", { status: res.status, ok: res.ok });
+      const data = await res.json();
 
-      let data;
-      try {
-        data = await res.json();
-        console.log("Dados da resposta:", data);
-      } catch (jsonError) {
-        console.error("Erro ao parsear resposta:", jsonError);
-        const text = await res.text();
-        console.error("Resposta em texto:", text);
-        toast.error("Erro ao processar resposta do servidor");
+      if (!res.ok || !data.ok) {
+        const errorMsg = data?.error || `Erro ao salvar assinatura (${res.status})`;
+        console.error("Erro ao salvar assinatura:", errorMsg);
+        toast.error(errorMsg);
         setSalvando(false);
         return;
       }
 
-      if (!res.ok) {
-        console.error("Erro na API:", { status: res.status, data });
-        toast.error(data?.error || `Erro ao salvar assinatura (${res.status})`);
-        setSalvando(false);
-        return;
-      }
-
-      if (data && !data.ok && data.error) {
-        console.error("Erro nos dados:", data);
-        toast.error(data.error);
-        setSalvando(false);
-        return;
-      }
-
-      console.log("Assinatura salva com sucesso!");
       toast.success("Assinatura do professor salva!");
       setImagemUrl("");
       setDesenhou(false);
@@ -638,8 +640,6 @@ export function AssinaturaProfessorModal({
               >
                 <canvas
                   ref={canvasRef}
-                  width={800}
-                  height={isLandscape ? 400 : 300}
                   className={isLandscape
                     ? "w-full h-full cursor-crosshair touch-none"
                     : "w-full border border-gray-200 rounded cursor-crosshair touch-none"
