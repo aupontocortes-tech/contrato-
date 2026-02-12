@@ -11,9 +11,22 @@ export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL,
+      },
+    },
   });
 
-globalForPrisma.prisma = prisma;
+// Garantir que conexões sejam fechadas adequadamente
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
+} else {
+  // Em produção, garantir desconexão adequada
+  process.on("beforeExit", async () => {
+    await prisma.$disconnect();
+  });
+}
 
 // Helper para verificar conexão
 export async function testConnection(): Promise<boolean> {

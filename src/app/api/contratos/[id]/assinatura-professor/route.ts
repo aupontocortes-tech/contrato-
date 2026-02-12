@@ -15,8 +15,29 @@ export async function POST(
       return NextResponse.json({ error: "ID inválido" }, { status: 400 });
     }
 
-    // Buscar contrato
-    const contrato = await prisma.contrato.findUnique({ where: { id: contratoId } });
+    // Buscar contrato com timeout para evitar conexões travadas
+    let contrato;
+    try {
+      contrato = await Promise.race([
+        prisma.contrato.findUnique({ where: { id: contratoId } }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Timeout ao buscar contrato")), 10000)
+        ),
+      ]) as Awaited<ReturnType<typeof prisma.contrato.findUnique>>;
+    } catch (dbError: any) {
+      console.error("Erro ao buscar contrato:", dbError);
+      if (dbError.message?.includes("MaxClientsInSessionMode") || dbError.message?.includes("max clients")) {
+        return NextResponse.json(
+          { error: "Muitas conexões simultâneas ao banco. Tente novamente em alguns segundos." },
+          { status: 503 }
+        );
+      }
+      return NextResponse.json(
+        { error: "Erro ao conectar ao banco de dados. Tente novamente." },
+        { status: 500 }
+      );
+    }
+    
     if (!contrato) {
       return NextResponse.json({ error: "Contrato não encontrado" }, { status: 404 });
     }
@@ -73,20 +94,45 @@ export async function POST(
       assinaturaUrl = assinatura; // Usar o data URL completo como URL
     }
 
-    // Atualizar banco de dados
-    await prisma.contrato.update({
-      where: { id: contratoId },
-      data: {
-        assinatura_professor_url: assinaturaUrl,
-        data_assinatura_professor: new Date(),
-        status: "professor_assinado",
-      },
-    });
+    // Atualizar banco de dados com timeout
+    try {
+      await Promise.race([
+        prisma.contrato.update({
+          where: { id: contratoId },
+          data: {
+            assinatura_professor_url: assinaturaUrl,
+            data_assinatura_professor: new Date(),
+            status: "professor_assinado",
+          },
+        }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Timeout ao atualizar contrato")), 10000)
+        ),
+      ]);
+    } catch (updateError: any) {
+      console.error("Erro ao atualizar contrato:", updateError);
+      if (updateError.message?.includes("MaxClientsInSessionMode") || updateError.message?.includes("max clients")) {
+        return NextResponse.json(
+          { error: "Muitas conexões simultâneas ao banco. Tente novamente em alguns segundos." },
+          { status: 503 }
+        );
+      }
+      throw updateError;
+    }
 
     return NextResponse.json({ ok: true, assinatura_url: assinaturaUrl });
   } catch (error) {
     console.error("Erro ao salvar assinatura do professor:", error);
     const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+    
+    // Mensagem mais amigável para erro de conexões
+    if (errorMessage.includes("MaxClientsInSessionMode") || errorMessage.includes("max clients")) {
+      return NextResponse.json(
+        { error: "Muitas conexões simultâneas ao banco de dados. Aguarde alguns segundos e tente novamente." },
+        { status: 503 }
+      );
+    }
+    
     return NextResponse.json(
       { error: `Erro ao salvar assinatura: ${errorMessage}` },
       { status: 500 }
