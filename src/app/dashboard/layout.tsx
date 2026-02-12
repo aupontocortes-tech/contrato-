@@ -44,7 +44,7 @@ export default function DashboardLayout({
           style={{
             display: "flex",
             alignItems: "center",
-            justifyContent: "space-between",
+            justifyContent: "flex-end",
             padding: "12px 16px",
             borderBottom: "1px solid #e5e7eb",
             backgroundColor: "#fff",
@@ -54,7 +54,6 @@ export default function DashboardLayout({
           }}
           className="dash-mobile"
         >
-          <span style={{ fontWeight: 600, fontSize: "16px", color: "#1f2937" }}>Menu</span>
           <button
             type="button"
             onClick={() => setMenuOpen(!menuOpen)}
