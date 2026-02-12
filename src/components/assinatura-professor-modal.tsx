@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Upload, PenLine, X, RotateCw } from "lucide-react";
+import { Upload, PenLine, X, RotateCw, ArrowLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -47,28 +47,61 @@ export function AssinaturaProfessorModal({
       // Ajustar tamanho do canvas baseado no container e orientação
       const resizeCanvas = () => {
         if (!canvas || !canvas.parentElement) return;
-        const container = canvas.parentElement;
-        const containerWidth = container.clientWidth - 32; // padding
         
-        // Em landscape, usar mais espaço vertical
-        let canvasWidth = 800;
-        let canvasHeight = isLandscape ? 400 : 300;
-        
-        // Se estiver em landscape real, aumentar ainda mais
-        const isActuallyLandscape = window.innerWidth > window.innerHeight;
-        if (isActuallyLandscape || isLandscape) {
-          canvasHeight = Math.max(400, window.innerHeight * 0.4); // 40% da altura da tela
-          canvasWidth = canvasHeight * 2; // Proporção 2:1
+        // Em landscape, usar quase toda a tela
+        if (isLandscape) {
+          const viewportWidth = window.innerWidth;
+          const viewportHeight = window.innerHeight;
+          
+          // Deixar espaço para header e botões (cerca de 120px)
+          const availableHeight = viewportHeight - 120;
+          const availableWidth = viewportWidth - 32; // padding lateral
+          
+          // Usar quase toda a área disponível
+          const canvasWidth = Math.min(availableWidth, 1200);
+          const canvasHeight = Math.min(availableHeight, 600);
+          
+          // Atualizar dimensões reais do canvas
+          canvas.width = canvasWidth;
+          canvas.height = canvasHeight;
+          
+          // Estilo para ocupar todo espaço
+          canvas.style.width = `${availableWidth}px`;
+          canvas.style.height = `${availableHeight}px`;
+          
+          // Reconfigurar contexto após redimensionar
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.strokeStyle = "#000";
+            ctx.lineWidth = 3;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+          }
+        } else {
+          // Modo portrait - tamanho normal
+          const container = canvas.parentElement;
+          const containerWidth = container.clientWidth - 32; // padding
+          const canvasWidth = 800;
+          const canvasHeight = 300;
+          
+          const scale = Math.min(1, containerWidth / canvasWidth);
+          const finalWidth = canvasWidth * scale;
+          const finalHeight = canvasHeight * scale;
+          
+          canvas.width = canvasWidth;
+          canvas.height = canvasHeight;
+          canvas.style.width = `${finalWidth}px`;
+          canvas.style.height = `${finalHeight}px`;
+          
+          // Reconfigurar contexto
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.strokeStyle = "#000";
+            ctx.lineWidth = 3;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+          }
         }
-        
-        // Ajustar para caber no container
-        const maxWidth = containerWidth;
-        const scale = Math.min(1, maxWidth / canvasWidth);
-        const finalWidth = canvasWidth * scale;
-        const finalHeight = canvasHeight * scale;
-        
-        canvas.style.width = `${finalWidth}px`;
-        canvas.style.height = `${finalHeight}px`;
       };
       
       resizeCanvas();
@@ -329,17 +362,58 @@ export function AssinaturaProfessorModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle>Assinatura do Professor</DialogTitle>
-          <DialogDescription>
-            Cole uma imagem ou desenhe sua assinatura manualmente.
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent 
+        className={isLandscape && modo === "manual" 
+          ? "sm:max-w-[100vw] sm:max-h-[100vh] sm:w-[100vw] sm:h-[100vh] sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-none p-2 sm:p-4" 
+          : "sm:max-w-[600px]"
+        }
+      >
+        {isLandscape && modo === "manual" ? (
+          <div className="flex flex-col h-full">
+            {/* Header compacto em landscape */}
+            <div className="flex items-center justify-between mb-2 pb-2 border-b">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setIsLandscape(false);
+                  if (screen.orientation && typeof (screen.orientation as any).unlock === 'function') {
+                    (screen.orientation as any).unlock();
+                  }
+                  if (document.fullscreenElement) {
+                    document.exitFullscreen();
+                  }
+                }}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Voltar
+              </Button>
+              <h3 className="text-sm font-semibold">Assinatura do Professor</h3>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => onOpenChange(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <DialogHeader>
+            <DialogTitle>Assinatura do Professor</DialogTitle>
+            <DialogDescription>
+              Cole uma imagem ou desenhe sua assinatura manualmente.
+            </DialogDescription>
+          </DialogHeader>
+        )}
 
-        <div className="space-y-4 mt-4">
-          {/* Seleção de modo */}
-          <div className="flex gap-2">
+        <div className={isLandscape && modo === "manual" ? "flex flex-col h-full" : "space-y-4 mt-4"}>
+          {/* Seleção de modo - esconder em landscape */}
+          {(!isLandscape || modo !== "manual") && (
+            <div className="flex gap-2">
             <Button
               type="button"
               variant={modo === "colar" ? "default" : "outline"}
@@ -367,6 +441,7 @@ export function AssinaturaProfessorModal({
               Desenhar
             </Button>
           </div>
+          )}
 
           {/* Modo Colar/Upload */}
           {modo === "colar" && (
@@ -414,31 +489,42 @@ export function AssinaturaProfessorModal({
 
           {/* Modo Manual */}
           {modo === "manual" && (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center flex-wrap gap-2">
-                <Label>Desenhe sua assinatura com o dedo</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={toggleLandscape}
-                  className="flex items-center gap-2"
-                >
-                  <RotateCw className="h-4 w-4" />
-                  {isLandscape ? "Voltar Vertical" : "Rotacionar para Horizontal"}
-                </Button>
-              </div>
+            <div className={isLandscape ? "flex flex-col h-full flex-1" : "space-y-4"}>
               {!isLandscape && (
-                <p className="text-xs text-muted-foreground">
-                  💡 Dica: Rotacione para horizontal para ter mais espaço para assinar
-                </p>
+                <>
+                  <div className="flex justify-between items-center flex-wrap gap-2">
+                    <Label>Desenhe sua assinatura com o dedo</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={toggleLandscape}
+                      className="flex items-center gap-2"
+                    >
+                      <RotateCw className="h-4 w-4" />
+                      Rotacionar para Horizontal
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    💡 Dica: Rotacione para horizontal para ter mais espaço para assinar
+                  </p>
+                </>
               )}
-              <div className="border-2 border-gray-300 rounded-lg p-4 bg-white touch-none">
+              {/* Container do canvas - sem bordas em landscape */}
+              <div 
+                className={isLandscape 
+                  ? "flex-1 flex flex-col bg-white touch-none min-h-0" 
+                  : "border-2 border-gray-300 rounded-lg p-4 bg-white touch-none"
+                }
+              >
                 <canvas
                   ref={canvasRef}
                   width={800}
                   height={isLandscape ? 400 : 300}
-                  className="w-full border border-gray-200 rounded cursor-crosshair touch-none"
+                  className={isLandscape
+                    ? "w-full h-full cursor-crosshair touch-none"
+                    : "w-full border border-gray-200 rounded cursor-crosshair touch-none"
+                  }
                   style={{ touchAction: "none" }}
                   onMouseDown={startDrawing}
                   onMouseMove={draw}
@@ -450,19 +536,42 @@ export function AssinaturaProfessorModal({
                   onTouchCancel={stopDrawing}
                 />
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={limparCanvas}
-                className="w-full"
-              >
-                Limpar
-              </Button>
+              {/* Botões - layout diferente em landscape */}
+              <div className={isLandscape ? "flex gap-2 mt-2" : "space-y-2"}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={limparCanvas}
+                  className={isLandscape ? "flex-1" : "w-full"}
+                >
+                  Limpar
+                </Button>
+                {isLandscape && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setIsLandscape(false);
+                      if (screen.orientation && typeof (screen.orientation as any).unlock === 'function') {
+                        (screen.orientation as any).unlock();
+                      }
+                      if (document.fullscreenElement) {
+                        document.exitFullscreen();
+                      }
+                    }}
+                    className="flex items-center gap-2"
+                  >
+                    <RotateCw className="h-4 w-4" />
+                    Voltar Vertical
+                  </Button>
+                )}
+              </div>
             </div>
           )}
 
-          {/* Botões de ação */}
-          <div className="flex justify-end gap-2 pt-4">
+          {/* Botões de ação - esconder em landscape */}
+          {(!isLandscape || modo !== "manual") && (
+            <div className="flex justify-end gap-2 pt-4">
             <Button
               type="button"
               variant="outline"
@@ -479,6 +588,27 @@ export function AssinaturaProfessorModal({
               {salvando ? "Salvando..." : "Salvar Assinatura"}
             </Button>
           </div>
+          )}
+          {/* Botões de ação em landscape - fixo no bottom */}
+          {isLandscape && modo === "manual" && (
+            <div className="flex justify-end gap-2 pt-2 border-t mt-auto">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                onClick={handleSalvar}
+                disabled={salvando || !desenhou}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {salvando ? "Salvando..." : "Salvar Assinatura"}
+              </Button>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
