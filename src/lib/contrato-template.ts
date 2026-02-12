@@ -13,7 +13,7 @@ const CLAUSULAS_PRESENCIAL = [
   { numero: "8ª", titulo: "PAUSAS", texto: "Pausas não prorrogam o contrato sem acordo formal." },
   { numero: "9ª", titulo: "CANCELAMENTO", texto: "Cancelamento mediante aviso prévio por escrito de 30 dias." },
   { numero: "10ª", titulo: "REAJUSTE", texto: "Valores poderão ser reajustados mediante aviso prévio." },
-  { numero: "11ª", titulo: "USO DE IMAGEM", texto: "Ao assinar este contrato, o CONTRATANTE autoriza automaticamente o uso de sua imagem para fins profissionais da CONTRATADA." },
+  { numero: "11ª", titulo: "USO DE IMAGEM", texto: "O CONTRATANTE autoriza a utilização de sua imagem, eventualmente registrada durante o acompanhamento da consultoria, para fins exclusivamente profissionais e de divulgação dos serviços da CONTRATADA, de forma gratuita e respeitosa." },
 ];
 
 /** Cláusulas do contrato de Consultoria Online (conteúdo exato do PDF enviado). */
@@ -25,7 +25,7 @@ const CLAUSULAS_CONSULTORIA_ONLINE = [
   { numero: "5ª", titulo: "PAGAMENTO", texto: "Pagamento antecipado conforme plano contratado. A inadimplência suspende o serviço, sem reembolso." },
   { numero: "6ª", titulo: "SUPORTE E LIMITES", texto: "O suporte será prestado de forma online, não incluindo acompanhamento presencial, correção em tempo real ou responsabilidade por execução inadequada dos exercícios." },
   { numero: "7ª", titulo: "CANCELAMENTO", texto: "Cancelamento mediante aviso prévio por escrito de 30 dias." },
-  { numero: "8ª", titulo: "USO DE IMAGEM", texto: "Ao assinar este contrato, o CONTRATANTE autoriza automaticamente o uso de sua imagem para fins profissionais da CONTRATADA." },
+  { numero: "8ª", titulo: "USO DE IMAGEM", texto: "O CONTRATANTE autoriza a utilização de sua imagem, eventualmente registrada durante o acompanhamento da consultoria, para fins exclusivamente profissionais e de divulgação dos serviços da CONTRATADA, de forma gratuita e respeitosa." },
   { numero: "9ª", titulo: "VIGÊNCIA", texto: "Contrato com vigência por prazo indeterminado, válido até solicitação formal de cancelamento." },
 ];
 
