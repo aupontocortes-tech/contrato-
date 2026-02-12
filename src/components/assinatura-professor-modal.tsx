@@ -95,29 +95,16 @@ export function AssinaturaProfessorModal({
             img.src = canvasImageRef.current;
           }
         } else {
-          // Modo portrait - expandir proporcionalmente até os limites
-          const viewportWidth = window.innerWidth;
-          const viewportHeight = window.innerHeight;
+          // Modo portrait - responsivo para desktop e mobile
+          const container = canvas.parentElement;
+          if (!container) return;
           
-          // Deixar espaço para header, botões e controles (~200px total)
-          const availableHeight = viewportHeight - 200;
-          const availableWidth = viewportWidth - 32; // padding lateral mínimo
+          const containerWidth = container.clientWidth - 32; // padding
+          const isMobile = window.innerWidth < 640;
           
-          // Proporção ideal para assinatura (mais larga que alta)
-          const idealRatio = 2.5; // largura 2.5x maior que altura
-          let canvasWidth = availableWidth;
-          let canvasHeight = canvasWidth / idealRatio;
-          
-          // Se altura calculada for maior que disponível, ajustar
-          if (canvasHeight > availableHeight) {
-            canvasHeight = availableHeight;
-            canvasWidth = canvasHeight * idealRatio;
-            // Se largura calculada exceder disponível, ajustar novamente
-            if (canvasWidth > availableWidth) {
-              canvasWidth = availableWidth;
-              canvasHeight = canvasWidth / idealRatio;
-            }
-          }
+          // Em mobile: altura fixa menor, em desktop: altura maior
+          const canvasHeight = isMobile ? 250 : 300;
+          const canvasWidth = Math.min(containerWidth, isMobile ? containerWidth : 600);
           
           // Atualizar dimensões reais do canvas
           canvas.width = canvasWidth;
@@ -134,7 +121,7 @@ export function AssinaturaProfessorModal({
           const ctx = canvas.getContext("2d");
           if (ctx) {
             ctx.strokeStyle = "#000";
-            ctx.lineWidth = 3;
+            ctx.lineWidth = isMobile ? 3 : 2;
             ctx.lineCap = "round";
             ctx.lineJoin = "round";
           }
@@ -433,35 +420,44 @@ export function AssinaturaProfessorModal({
         return;
       }
 
+      console.log("Enviando assinatura para API...", { contratoId, tamanho: assinaturaDataUrl.length });
+      
       const res = await fetch(`/api/contratos/${contratoId}/assinatura-professor`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ assinatura: assinaturaDataUrl }),
       });
 
+      console.log("Resposta da API:", { status: res.status, ok: res.ok });
+
       let data;
       try {
         data = await res.json();
+        console.log("Dados da resposta:", data);
       } catch (jsonError) {
         console.error("Erro ao parsear resposta:", jsonError);
+        const text = await res.text();
+        console.error("Resposta em texto:", text);
         toast.error("Erro ao processar resposta do servidor");
         setSalvando(false);
         return;
       }
 
       if (!res.ok) {
-        console.error("Erro na API:", data);
-        toast.error(data.error || `Erro ao salvar assinatura (${res.status})`);
+        console.error("Erro na API:", { status: res.status, data });
+        toast.error(data?.error || `Erro ao salvar assinatura (${res.status})`);
         setSalvando(false);
         return;
       }
 
-      if (!data.ok) {
-        toast.error(data.error || "Erro ao salvar assinatura");
+      if (data && !data.ok && data.error) {
+        console.error("Erro nos dados:", data);
+        toast.error(data.error);
         setSalvando(false);
         return;
       }
 
+      console.log("Assinatura salva com sucesso!");
       toast.success("Assinatura do professor salva!");
       setImagemUrl("");
       setDesenhou(false);
@@ -482,13 +478,13 @@ export function AssinaturaProfessorModal({
         className={isLandscape && modo === "manual" 
           ? "sm:max-w-[100vw] sm:max-h-[100vh] sm:w-[100vw] sm:h-[100vh] sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-none p-1 sm:p-2 m-0" 
           : modo === "manual"
-          ? "sm:max-w-[95vw] sm:w-[95vw] p-2 sm:p-3"
-          : "sm:max-w-[600px]"
+          ? "max-w-[95vw] w-[95vw] p-2 sm:p-4"
+          : "sm:max-w-[600px] max-w-[95vw]"
         }
         style={isLandscape && modo === "manual" 
           ? { margin: 0, padding: '8px', maxWidth: '100vw', maxHeight: '100vh', width: '100vw', height: '100vh' }
           : modo === "manual"
-          ? { maxWidth: '95vw', width: '95vw', margin: '0 auto' }
+          ? { maxWidth: '95vw', width: '95vw', margin: '0 auto', padding: '16px' }
           : {}
         }
       >
@@ -618,11 +614,11 @@ export function AssinaturaProfessorModal({
                   </p>
                 </>
               )}
-              {/* Container do canvas - sem bordas, expandindo completamente */}
+              {/* Container do canvas - responsivo para desktop e mobile */}
               <div 
                 className={isLandscape 
                   ? "flex-1 flex flex-col bg-white touch-none min-h-0 w-full" 
-                  : "border-2 border-gray-300 rounded-lg p-2 bg-white touch-none w-full"
+                  : "border-2 border-gray-300 rounded-lg p-2 sm:p-4 bg-white touch-none w-full"
                 }
                 style={isLandscape 
                   ? { 
@@ -635,7 +631,8 @@ export function AssinaturaProfessorModal({
                       margin: 0
                     } 
                   : {
-                      width: '100%'
+                      width: '100%',
+                      minHeight: '200px'
                     }
                 }
               >
@@ -649,9 +646,10 @@ export function AssinaturaProfessorModal({
                   }
                   style={{ 
                     touchAction: "none",
-                    width: isLandscape ? '100%' : '100%',
+                    width: '100%',
                     height: isLandscape ? '100%' : 'auto',
-                    display: 'block'
+                    display: 'block',
+                    maxHeight: isLandscape ? 'none' : '400px'
                   }}
                   onMouseDown={startDrawing}
                   onMouseMove={draw}

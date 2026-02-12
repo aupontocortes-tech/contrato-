@@ -64,8 +64,10 @@ export async function POST(
     assinaturaUrl = `/contratos/${fileName}`;
   } catch (e) {
     console.error("Erro ao processar assinatura do professor:", e);
+    const errorMessage = e instanceof Error ? e.message : String(e);
+    console.error("Detalhes do erro:", errorMessage);
     return NextResponse.json(
-      { error: "Erro ao processar assinatura do professor." },
+      { error: `Erro ao processar assinatura: ${errorMessage}` },
       { status: 400 }
     );
   }
