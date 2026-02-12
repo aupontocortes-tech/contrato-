@@ -1,0 +1,65 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+/** Códigos válidos para confirmar exclusão: 1, 2, 3 ou 4 */
+const CODIGOS_VALIDOS = ["1", "2", "3", "4"];
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const alunoId = parseInt(id, 10);
+    if (Number.isNaN(alunoId)) {
+      return NextResponse.json({ error: "ID inválido" }, { status: 400 });
+    }
+
+    let body: { codigo?: string };
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: "Envie o código de confirmação" }, { status: 400 });
+    }
+
+    const codigo = String(body?.codigo ?? "").trim();
+    if (!CODIGOS_VALIDOS.includes(codigo)) {
+      return NextResponse.json(
+        { error: "Código incorreto. Digite 1, 2, 3 ou 4 para confirmar a exclusão." },
+        { status: 403 }
+      );
+    }
+
+    // Verificar se o aluno tem contratos associados
+    const contratos = await prisma.contrato.findMany({
+      where: { aluno_id: alunoId },
+    });
+
+    if (contratos.length > 0) {
+      return NextResponse.json(
+        { error: `Não é possível excluir o aluno. Existem ${contratos.length} contrato(s) associado(s).` },
+        { status: 400 }
+      );
+    }
+
+    try {
+      await prisma.aluno.delete({ where: { id: alunoId } });
+      return NextResponse.json({ ok: true });
+    } catch (e: any) {
+      console.error("DELETE /api/alunos/[id]:", e);
+      if (e.code === "P2025") {
+        return NextResponse.json({ error: "Aluno não encontrado" }, { status: 404 });
+      }
+      return NextResponse.json(
+        { error: "Erro ao excluir aluno. Verifique a conexão com o banco." },
+        { status: 500 }
+      );
+    }
+  } catch (error) {
+    console.error("Erro ao excluir aluno:", error);
+    return NextResponse.json(
+      { error: "Erro ao processar exclusão do aluno." },
+      { status: 500 }
+    );
+  }
+}

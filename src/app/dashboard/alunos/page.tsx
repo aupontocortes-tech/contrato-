@@ -4,8 +4,9 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { AlunoModal } from "@/components/aluno-modal";
+import { ExcluirAlunoModal } from "@/components/excluir-aluno-modal";
 
 type Aluno = {
   id: number;
@@ -19,6 +20,8 @@ export default function AlunosPage() {
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [excluirModalOpen, setExcluirModalOpen] = useState(false);
+  const [alunoParaExcluir, setAlunoParaExcluir] = useState<{ id: number; nome: string } | null>(null);
 
   function loadAlunos() {
     setLoading(true);
@@ -93,6 +96,18 @@ export default function AlunosPage() {
                         {a.telefone && ` · ${a.telefone}`}
                       </p>
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => {
+                        setAlunoParaExcluir({ id: a.id, nome: a.nome_completo });
+                        setExcluirModalOpen(true);
+                      }}
+                      title="Excluir aluno"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -107,6 +122,22 @@ export default function AlunosPage() {
         onOpenChange={setModalOpen}
         onSuccess={loadAlunos}
       />
+
+      {/* Modal de exclusão */}
+      {alunoParaExcluir && (
+        <ExcluirAlunoModal
+          open={excluirModalOpen}
+          onOpenChange={(open) => {
+            setExcluirModalOpen(open);
+            if (!open) {
+              setAlunoParaExcluir(null);
+            }
+          }}
+          alunoId={alunoParaExcluir.id}
+          alunoNome={alunoParaExcluir.nome}
+          onSuccess={loadAlunos}
+        />
+      )}
     </div>
   );
 }
