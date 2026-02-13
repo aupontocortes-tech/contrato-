@@ -603,12 +603,15 @@ export default function AssinarPage() {
         </div>
       </section>
 
-      {/* Bloco de assinatura — cliente clica e assina aqui */}
+      {/* Bloco de assinatura do cliente — igual ao do professor: colar GOV ou desenhar, com rotação */}
       <section className="flex-shrink-0 p-4 pt-0 border-t border-border bg-background/95">
         <div className="max-w-2xl mx-auto space-y-3">
-          <h2 className="text-base font-semibold">Assinatura</h2>
+          <h2 className="text-base font-semibold">Assinatura do cliente</h2>
+          <p className="text-sm text-muted-foreground">
+            Cole a assinatura do GOV ou desenhe com o dedo. No celular, use rotação para horizontal para mais espaço.
+          </p>
           
-          {/* Seleção de modo */}
+          {/* Seleção de modo — mesmo tipo de assinatura que o professor */}
           <div className="flex gap-2">
             <Button
               type="button"
@@ -646,7 +649,7 @@ export default function AssinarPage() {
                 className="border-2 border-dashed border-muted-foreground/40 rounded-lg p-4 bg-white"
               >
                 <Label htmlFor="upload-assinatura" className="text-sm font-medium block mb-2">
-                  Cole a imagem da assinatura (Ctrl+V) ou faça upload:
+                  Cole a assinatura do GOV aqui (Ctrl+V) ou faça upload da imagem:
                 </Label>
                 <Input
                   id="upload-assinatura"
