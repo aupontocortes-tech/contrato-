@@ -64,8 +64,8 @@ export async function GET(
       dataAluno
     );
 
-    // Retornar PDF como resposta
-    return new NextResponse(pdfBuffer, {
+    // Retornar PDF como resposta (Buffer é BodyInit válido; Uint8Array não no tipo do NextResponse)
+    return new NextResponse(Buffer.from(pdfBuffer), {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="contrato-${contratoId}.pdf"`,
