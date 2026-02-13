@@ -45,13 +45,23 @@ export async function GET(
     };
     const contratoEstruturado = getContratoEstruturado(contratoParams);
 
+    // Converter datas (Prisma retorna Date) para string para gerarPdfAssinado
+    const dataProfessor =
+      contrato.data_assinatura_professor instanceof Date
+        ? contrato.data_assinatura_professor.toISOString()
+        : contrato.data_assinatura_professor;
+    const dataAluno =
+      contrato.data_assinatura instanceof Date
+        ? contrato.data_assinatura.toISOString()
+        : contrato.data_assinatura;
+
     // Gerar PDF com assinaturas
     const pdfBuffer = await gerarPdfAssinado(
       contratoEstruturado,
       contrato.assinatura_professor_url,
-      contrato.data_assinatura_professor,
+      dataProfessor,
       contrato.assinatura_url,
-      contrato.data_assinatura
+      dataAluno
     );
 
     // Retornar PDF como resposta
