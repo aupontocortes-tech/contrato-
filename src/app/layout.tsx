@@ -66,9 +66,56 @@ export default function RootLayout({
       >
         {children}
         <Toaster richColors position="top-center" />
+        {/* Modo da tela — sempre visível no canto inferior esquerdo */}
+        <div
+          id="modo-da-tela"
+          style={{
+            position: "fixed",
+            bottom: 20,
+            left: 20,
+            zIndex: 2147483647,
+            padding: 16,
+            borderRadius: 12,
+            border: "3px solid #2563eb",
+            backgroundColor: "#fff",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.25)",
+          }}
+        >
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#111", marginBottom: 12 }}>Modo da tela</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button type="button" id="tema-normal" style={{ padding: "10px 16px", fontSize: 14, fontWeight: 500, borderRadius: 8, border: "2px solid #e5e7eb", background: "#eff6ff", color: "#1d4ed8", cursor: "pointer" }}>Normal</button>
+            <button type="button" id="tema-escuro" style={{ padding: "10px 16px", fontSize: 14, fontWeight: 500, borderRadius: 8, border: "2px solid #334155", background: "transparent", color: "#374151", cursor: "pointer" }}>Escuro</button>
+            <button type="button" id="tema-azul" style={{ padding: "10px 16px", fontSize: 14, fontWeight: 500, borderRadius: 8, border: "2px solid #93c5fd", background: "transparent", color: "#374151", cursor: "pointer" }}>Azul</button>
+          </div>
+        </div>
         <script
           dangerouslySetInnerHTML={{
             __html: `
+              (function() {
+                var key = 'contraton-theme';
+                var normal = document.getElementById('tema-normal');
+                var escuro = document.getElementById('tema-escuro');
+                var azul = document.getElementById('tema-azul');
+                function apply(t) {
+                  try { localStorage.setItem(key, t); } catch (e) {}
+                  window.dispatchEvent(new Event('contraton-theme-change'));
+                  if (normal && escuro && azul) {
+                    normal.style.background = t === 'light' ? '#eff6ff' : 'transparent';
+                    normal.style.color = t === 'light' ? '#1d4ed8' : '#374151';
+                    escuro.style.background = t === 'dark' ? '#1e3a8a' : 'transparent';
+                    escuro.style.color = t === 'dark' ? '#93c5fd' : '#374151';
+                    azul.style.background = t === 'blue' ? '#1d4ed8' : 'transparent';
+                    azul.style.color = t === 'blue' ? '#fff' : '#374151';
+                  }
+                }
+                if (normal) normal.onclick = function() { apply('light'); };
+                if (escuro) escuro.onclick = function() { apply('dark'); };
+                if (azul) azul.onclick = function() { apply('blue'); };
+                try {
+                  var s = localStorage.getItem(key);
+                  if (s === 'dark' || s === 'blue' || s === 'light') apply(s);
+                } catch (e) {}
+              })();
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
                   navigator.serviceWorker.register('/sw.js')
