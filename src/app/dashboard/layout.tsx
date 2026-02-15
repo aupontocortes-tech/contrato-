@@ -2,254 +2,143 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { InstallPrompt } from "@/components/install-prompt";
+import { LayoutDashboard, Users, FileStack, FileText, Menu, X } from "lucide-react";
 
-const THEME_KEY = "contraton-theme";
-type Theme = "light" | "dark" | "blue";
-
-const themes: Record<
-  Theme,
-  {
-    bg: string;
-    sidebar: string;
-    border: string;
-    text: string;
-    textMuted: string;
-    linkActiveBg: string;
-    linkActiveText: string;
-    linkActiveBorder: string;
-    overlay: string;
-  }
-> = {
-  light: {
-    bg: "#ffffff",
-    sidebar: "#ffffff",
-    border: "#e5e7eb",
-    text: "#374151",
-    textMuted: "#6b7280",
-    linkActiveBg: "#eff6ff",
-    linkActiveText: "#1d4ed8",
-    linkActiveBorder: "#3b82f6",
-    overlay: "rgba(0,0,0,0.5)",
-  },
-  dark: {
-    bg: "#0f172a",
-    sidebar: "#0f172a",
-    border: "#334155",
-    text: "#e2e8f0",
-    textMuted: "#94a3b8",
-    linkActiveBg: "#1e3a8a",
-    linkActiveText: "#93c5fd",
-    linkActiveBorder: "#3b82f6",
-    overlay: "rgba(0,0,0,0.7)",
-  },
-  blue: {
-    bg: "#eff6ff",
-    sidebar: "#dbeafe",
-    border: "#93c5fd",
-    text: "#1e3a8a",
-    textMuted: "#1d4ed8",
-    linkActiveBg: "#1d4ed8",
-    linkActiveText: "#ffffff",
-    linkActiveBorder: "#1d4ed8",
-    overlay: "rgba(0,0,0,0.5)",
-  },
-};
-
-function linkStyle(active: boolean, t: (typeof themes)[Theme]) {
-  return {
-    display: "block",
-    width: "100%",
-    padding: "8px 12px",
-    textAlign: "left" as const,
-    fontSize: "14px",
-    fontWeight: 500,
-    color: active ? t.linkActiveText : t.text,
-    backgroundColor: active ? t.linkActiveBg : "transparent",
-    border: "none",
-    borderLeft: active ? `2px solid ${t.linkActiveBorder}` : "2px solid transparent",
-    cursor: "pointer",
-    textDecoration: "none",
-    borderRadius: "4px",
-  };
-}
+const navItems = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard/alunos", label: "Alunos", icon: Users },
+  { href: "/dashboard/planos", label: "Planos", icon: FileStack },
+  { href: "/dashboard/contratos", label: "Contratos", icon: FileText },
+];
 
 export default function DashboardLayout({
   children,
 }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [theme, setTheme] = useState<Theme>("light");
-
-  useEffect(() => {
-    const read = () => {
-      const stored = localStorage.getItem(THEME_KEY) as Theme | null;
-      if (stored && (stored === "light" || stored === "dark" || stored === "blue")) setTheme(stored);
-    };
-    read();
-    window.addEventListener("contraton-theme-change", read);
-    return () => window.removeEventListener("contraton-theme-change", read);
-  }, []);
-
-  const applyTheme = (t: Theme) => {
-    setTheme(t);
-    localStorage.setItem(THEME_KEY, t);
-  };
-
-  const t = themes[theme];
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", backgroundColor: t.bg }}>
-      <style dangerouslySetInnerHTML={{ __html: `
-        @media (min-width: 1024px) {
-          .dash-mobile { display: none !important; }
-          .dash-desktop { display: flex !important; }
-          .dash-wrap { flex-direction: row !important; align-items: stretch !important; }
-        }
-        @media (max-width: 1023px) {
-          .dash-desktop { display: none !important; }
-        }
-      ` }} />
-      <div className="dash-wrap" style={{ display: "flex", flex: 1, flexDirection: "column" }}>
-        {/* Mobile Header */}
-        <header
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "flex-end",
-            padding: "12px 16px",
-            borderBottom: `1px solid ${t.border}`,
-            backgroundColor: t.sidebar,
-            position: "sticky",
-            top: 0,
-            zIndex: 30,
-          }}
-          className="dash-mobile"
-        >
+    <div className="flex h-screen overflow-hidden bg-background">
+      {/* Desktop sidebar */}
+      <aside className="hidden lg:flex w-[240px] flex-col bg-sidebar border-r border-sidebar-border shrink-0">
+        <div className="flex items-center gap-2 px-6 py-5 border-b border-sidebar-border">
+          <div className="h-8 w-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
+            <span className="text-sidebar-primary-foreground font-bold text-sm font-sans">C</span>
+          </div>
+          <span className="text-sidebar-foreground font-semibold text-base font-sans tracking-tight">
+            Contraton
+          </span>
+        </div>
+        <nav className="flex flex-col gap-1 px-3 py-4 flex-1">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  isActive
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                }`}
+              >
+                <item.icon className="h-[18px] w-[18px] shrink-0" />
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+        <div className="px-4 py-4 border-t border-sidebar-border">
+          <p className="text-xs text-[var(--sidebar-muted)] font-sans">
+            Contraton v1.0
+          </p>
+        </div>
+      </aside>
+
+      {/* Mobile overlay */}
+      {menuOpen && (
+        <div
+          className="fixed inset-0 bg-foreground/40 backdrop-blur-sm z-40 lg:hidden"
+          onClick={() => setMenuOpen(false)}
+        />
+      )}
+
+      {/* Mobile sidebar */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-[280px] bg-sidebar border-r border-sidebar-border flex flex-col transition-transform duration-200 ease-in-out lg:hidden ${
+          menuOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b border-sidebar-border">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
+              <span className="text-sidebar-primary-foreground font-bold text-sm font-sans">C</span>
+            </div>
+            <span className="text-sidebar-foreground font-semibold text-base font-sans">
+              Contraton
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setMenuOpen(false)}
+            className="p-1.5 rounded-md text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
+            aria-label="Fechar menu"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <nav className="flex flex-col gap-1 px-3 py-4 flex-1">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setMenuOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  isActive
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                }`}
+              >
+                <item.icon className="h-[18px] w-[18px] shrink-0" />
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+      </aside>
+
+      {/* Main content area */}
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+        {/* Mobile header */}
+        <header className="flex items-center justify-between px-4 py-3 border-b border-border bg-card lg:hidden shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="h-7 w-7 rounded-md bg-primary flex items-center justify-center">
+              <span className="text-primary-foreground font-bold text-xs font-sans">C</span>
+            </div>
+            <span className="text-foreground font-semibold text-sm font-sans">Contraton</span>
+          </div>
           <button
             type="button"
             onClick={() => setMenuOpen(!menuOpen)}
-            style={{
-              padding: "8px",
-              border: `1px solid ${t.border}`,
-              borderRadius: "6px",
-              background: t.sidebar,
-              color: t.text,
-              cursor: "pointer",
-            }}
+            className="p-2 rounded-lg border border-border bg-background text-foreground hover:bg-accent transition-colors"
             aria-label="Abrir menu"
           >
-            <span style={{ fontSize: "18px" }}>☰</span>
+            <Menu className="h-5 w-5" />
           </button>
         </header>
 
-        {menuOpen && (
-          <div
-            className="dash-mobile"
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: t.overlay,
-              zIndex: 40,
-            }}
-            onClick={() => setMenuOpen(false)}
-          />
-        )}
-        <aside
-          className="dash-mobile"
-          style={{
-            display: menuOpen ? "flex" : "none",
-            flexDirection: "column",
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "260px",
-            height: "100%",
-            backgroundColor: t.sidebar,
-            borderRight: `1px solid ${t.border}`,
-            zIndex: 50,
-            padding: "16px",
-            boxShadow: "4px 0 12px rgba(0,0,0,0.1)",
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexShrink: 0 }}>
-            <strong style={{ fontSize: "12px", color: t.text, textTransform: "uppercase" }}>Menu</strong>
-            <button
-              type="button"
-              onClick={() => setMenuOpen(false)}
-              style={{ padding: "4px", border: "none", background: "none", color: t.text, cursor: "pointer", fontSize: "18px" }}
-            >
-              ✕
-            </button>
+        {/* Content */}
+        <main className="flex-1 overflow-auto">
+          <div className="max-w-5xl mx-auto px-4 py-6 lg:px-8 lg:py-8">
+            {children}
           </div>
-          <nav style={{ display: "flex", flexDirection: "column", gap: "4px", flex: 1, minHeight: 0 }}>
-            <Link href="/dashboard" onClick={() => setMenuOpen(false)} style={linkStyle(pathname === "/dashboard", t)}>
-              Dashboard
-            </Link>
-            <Link href="/dashboard/alunos" onClick={() => setMenuOpen(false)} style={linkStyle(pathname === "/dashboard/alunos", t)}>
-              Alunos
-            </Link>
-            <Link href="/dashboard/planos" onClick={() => setMenuOpen(false)} style={linkStyle(pathname === "/dashboard/planos", t)}>
-              Planos
-            </Link>
-            <Link href="/dashboard/contratos" onClick={() => setMenuOpen(false)} style={linkStyle(pathname === "/dashboard/contratos", t)}>
-              Contratos
-            </Link>
-          </nav>
-        </aside>
-
-        {/* Desktop Sidebar */}
-        <aside
-          className="dash-desktop"
-          style={{
-            display: "none",
-            width: "224px",
-            minHeight: "100vh",
-            borderRight: `1px solid ${t.border}`,
-            backgroundColor: t.sidebar,
-            flexDirection: "column",
-            padding: "16px",
-          }}
-        >
-          <div style={{ padding: "16px", borderBottom: `1px solid ${t.border}`, marginBottom: "8px", flexShrink: 0 }}>
-            <h2 style={{ fontSize: "12px", fontWeight: 600, color: t.text, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              Menu
-            </h2>
-          </div>
-          <nav style={{ display: "flex", flexDirection: "column", gap: "4px", flex: 1, minHeight: 0 }}>
-            <Link href="/dashboard" style={linkStyle(pathname === "/dashboard", t)}>
-              Dashboard
-            </Link>
-            <Link href="/dashboard/alunos" style={linkStyle(pathname === "/dashboard/alunos", t)}>
-              Alunos
-            </Link>
-            <Link href="/dashboard/planos" style={linkStyle(pathname === "/dashboard/planos", t)}>
-              Planos
-            </Link>
-            <Link href="/dashboard/contratos" style={linkStyle(pathname === "/dashboard/contratos", t)}>
-              Contratos
-            </Link>
-          </nav>
-        </aside>
-
-        {/* Main */}
-        <main
-          style={{
-            flex: 1,
-            padding: "24px",
-            overflow: "auto",
-            backgroundColor: t.bg,
-            minHeight: "100vh",
-            color: t.text,
-          }}
-        >
-          <div style={{ maxWidth: "1152px", margin: "0 auto" }}>{children}</div>
         </main>
       </div>
+
       <InstallPrompt />
     </div>
   );
