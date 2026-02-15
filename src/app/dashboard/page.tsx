@@ -5,6 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { Users, FileText, Clock } from "lucide-react";
 
+const THEME_KEY = "contraton-theme";
+
 type Stats = {
   totalAlunos: number;
   contratosAtivos: number;
@@ -12,6 +14,26 @@ type Stats = {
 };
 
 export default function DashboardPage() {
+  const [modoMenuOpen, setModoMenuOpen] = useState(false);
+  const [theme, setTheme] = useState<"light" | "blue">("light");
+
+  useEffect(() => {
+    const read = () => {
+      const s = localStorage.getItem(THEME_KEY);
+      if (s === "light" || s === "blue") setTheme(s);
+      else if (s === "dark") setTheme("light");
+    };
+    read();
+    window.addEventListener("contraton-theme-change", read);
+    return () => window.removeEventListener("contraton-theme-change", read);
+  }, []);
+
+  const applyModo = (t: "light" | "blue") => {
+    localStorage.setItem(THEME_KEY, t);
+    window.dispatchEvent(new Event("contraton-theme-change"));
+    setModoMenuOpen(false);
+  };
+
   const [stats, setStats] = useState<Stats>({
     totalAlunos: 0,
     contratosAtivos: 0,
@@ -138,6 +160,79 @@ export default function DashboardPage() {
             </button>
           </Link>
         </div>
+      </div>
+
+      {/* Três pontinhos no canto inferior esquerdo — abre menu Normal / Azul (só nesta página) */}
+      <div style={{ position: "fixed", bottom: 24, left: 24, zIndex: 50 }}>
+        {modoMenuOpen && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: "100%",
+              left: 0,
+              marginBottom: 8,
+              padding: "8px 0",
+              minWidth: 120,
+              borderRadius: 8,
+              border: "1px solid #e5e7eb",
+              backgroundColor: "#fff",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => applyModo("light")}
+              style={{
+                display: "block",
+                width: "100%",
+                padding: "10px 16px",
+                textAlign: "left",
+                fontSize: 14,
+                border: "none",
+                background: theme === "light" ? "#eff6ff" : "transparent",
+                color: theme === "light" ? "#1d4ed8" : "#374151",
+                cursor: "pointer",
+              }}
+            >
+              Normal
+            </button>
+            <button
+              type="button"
+              onClick={() => applyModo("blue")}
+              style={{
+                display: "block",
+                width: "100%",
+                padding: "10px 16px",
+                textAlign: "left",
+                fontSize: 14,
+                border: "none",
+                background: theme === "blue" ? "#1d4ed8" : "transparent",
+                color: theme === "blue" ? "#fff" : "#374151",
+                cursor: "pointer",
+              }}
+            >
+              Azul
+            </button>
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={() => setModoMenuOpen(!modoMenuOpen)}
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: "50%",
+            border: "1px solid #e5e7eb",
+            background: "#fff",
+            color: "#6b7280",
+            fontSize: 18,
+            cursor: "pointer",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+          }}
+          aria-label="Abrir modo da tela"
+        >
+          ⋯
+        </button>
       </div>
     </div>
   );

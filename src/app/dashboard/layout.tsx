@@ -200,63 +200,9 @@ export default function DashboardLayout({
               Contratos
             </Link>
           </nav>
-          {/* Modo da tela — sempre no canto inferior esquerdo do menu */}
-          <div style={{ flexShrink: 0, marginTop: "auto", paddingTop: "16px", borderTop: `2px solid ${t.border}` }}>
-            <span style={{ fontSize: "12px", fontWeight: 700, color: t.text, display: "block", marginBottom: "10px" }}>Modo da tela</span>
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-              <button
-                type="button"
-                onClick={() => applyTheme("light")}
-                style={{
-                  padding: "10px 14px",
-                  fontSize: "13px",
-                  fontWeight: 500,
-                  borderRadius: "8px",
-                  border: `2px solid ${t.border}`,
-                  background: theme === "light" ? t.linkActiveBg : "transparent",
-                  color: theme === "light" ? t.linkActiveText : t.text,
-                  cursor: "pointer",
-                }}
-              >
-                Normal
-              </button>
-              <button
-                type="button"
-                onClick={() => applyTheme("dark")}
-                style={{
-                  padding: "10px 14px",
-                  fontSize: "13px",
-                  fontWeight: 500,
-                  borderRadius: "8px",
-                  border: `2px solid ${t.border}`,
-                  background: theme === "dark" ? t.linkActiveBg : "transparent",
-                  color: theme === "dark" ? t.linkActiveText : t.text,
-                  cursor: "pointer",
-                }}
-              >
-                Escuro
-              </button>
-              <button
-                type="button"
-                onClick={() => applyTheme("blue")}
-                style={{
-                  padding: "10px 14px",
-                  fontSize: "13px",
-                  fontWeight: 500,
-                  borderRadius: "8px",
-                  border: `2px solid ${t.border}`,
-                  background: theme === "blue" ? t.linkActiveBg : "transparent",
-                  color: theme === "blue" ? t.linkActiveText : t.text,
-                  cursor: "pointer",
-                }}
-              >
-                Azul
-              </button>
-            </div>
-          </div>
         </aside>
 
-        {/* Desktop Sidebar — botões de modo no canto inferior esquerdo */}
+        {/* Desktop Sidebar */}
         <aside
           className="dash-desktop"
           style={{
@@ -288,60 +234,6 @@ export default function DashboardLayout({
               Contratos
             </Link>
           </nav>
-          {/* Modo da tela — canto inferior esquerdo do menu */}
-          <div style={{ flexShrink: 0, marginTop: "auto", paddingTop: "16px", borderTop: `2px solid ${t.border}` }}>
-            <span style={{ fontSize: "12px", fontWeight: 700, color: t.text, display: "block", marginBottom: "10px" }}>Modo da tela</span>
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-              <button
-                type="button"
-                onClick={() => applyTheme("light")}
-                style={{
-                  padding: "10px 14px",
-                  fontSize: "13px",
-                  fontWeight: 500,
-                  borderRadius: "8px",
-                  border: `2px solid ${t.border}`,
-                  background: theme === "light" ? t.linkActiveBg : "transparent",
-                  color: theme === "light" ? t.linkActiveText : t.text,
-                  cursor: "pointer",
-                }}
-              >
-                Normal
-              </button>
-              <button
-                type="button"
-                onClick={() => applyTheme("dark")}
-                style={{
-                  padding: "10px 14px",
-                  fontSize: "13px",
-                  fontWeight: 500,
-                  borderRadius: "8px",
-                  border: `2px solid ${t.border}`,
-                  background: theme === "dark" ? t.linkActiveBg : "transparent",
-                  color: theme === "dark" ? t.linkActiveText : t.text,
-                  cursor: "pointer",
-                }}
-              >
-                Escuro
-              </button>
-              <button
-                type="button"
-                onClick={() => applyTheme("blue")}
-                style={{
-                  padding: "10px 14px",
-                  fontSize: "13px",
-                  fontWeight: 500,
-                  borderRadius: "8px",
-                  border: `2px solid ${t.border}`,
-                  background: theme === "blue" ? t.linkActiveBg : "transparent",
-                  color: theme === "blue" ? t.linkActiveText : t.text,
-                  cursor: "pointer",
-                }}
-              >
-                Azul
-              </button>
-            </div>
-          </div>
         </aside>
 
         {/* Main */}
