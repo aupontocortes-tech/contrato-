@@ -32,22 +32,29 @@ export function AssinaturaProfessorModal({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const desenhandoRef = useRef(false);
+  const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+  const lastMidPointRef = useRef<{ x: number; y: number } | null>(null);
   const [isLandscape, setIsLandscape] = useState(false);
   const canvasImageRef = useRef<string | null>(null); // Para preservar assinatura ao mudar orientação
+
+  const configureStroke = useCallback((ctx: CanvasRenderingContext2D, lineWidth = 3.5) => {
+    ctx.strokeStyle = "#0f172a";
+    ctx.lineWidth = lineWidth;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+  }, []);
 
   useEffect(() => {
     if (open && modo === "manual" && canvasRef.current) {
       const canvas = canvasRef.current;
       const ctx = canvas.getContext("2d");
       if (ctx) {
-        ctx.strokeStyle = "#000";
-        ctx.lineWidth = 3;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
+        configureStroke(ctx);
       }
       // Ajustar tamanho do canvas baseado no container e orientação
       const resizeCanvas = () => {
         if (!canvas || !canvas.parentElement) return;
+        const dpr = window.devicePixelRatio || 1;
         
         // Em landscape, usar quase toda a tela
         if (isLandscape) {
@@ -64,13 +71,9 @@ export function AssinaturaProfessorModal({
           const canvasWidth = availableWidth;
           const canvasHeight = availableHeight;
           
-          // #region agent log
-          fetch('http://127.0.0.1:7244/ingest/64a9c410-e2fc-4943-9e45-90055d9af790',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'assinatura-professor-modal.tsx:resizeCanvas',message:'Resize landscape',data:{viewportWidth,viewportHeight,availableWidth,availableHeight,canvasWidth,canvasHeight},timestamp:Date.now(),runId:'run1',hypothesisId:'F'})}).catch(()=>{});
-          // #endregion
-          
           // Atualizar dimensões reais do canvas (alta resolução)
-          canvas.width = canvasWidth;
-          canvas.height = canvasHeight;
+          canvas.width = Math.floor(canvasWidth * dpr);
+          canvas.height = Math.floor(canvasHeight * dpr);
           
           // Estilo para ocupar todo espaço disponível
           canvas.style.width = `${availableWidth}px`;
@@ -82,10 +85,8 @@ export function AssinaturaProfessorModal({
           // Reconfigurar contexto após redimensionar
           const ctx = canvas.getContext("2d");
           if (ctx) {
-            ctx.strokeStyle = "#000";
-            ctx.lineWidth = 3;
-            ctx.lineCap = "round";
-            ctx.lineJoin = "round";
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            configureStroke(ctx, 4);
           }
           
           // Restaurar imagem se existir
@@ -109,17 +110,13 @@ export function AssinaturaProfessorModal({
           const containerWidth = container.clientWidth - 32; // padding
           const isMobile = window.innerWidth < 640;
           
-          // Em mobile: altura fixa menor, em desktop: altura maior
-          const canvasHeight = isMobile ? 250 : 300;
+          // Em mobile: altura maior para assinatura com dedo
+          const canvasHeight = isMobile ? 320 : 340;
           const canvasWidth = Math.min(containerWidth, isMobile ? containerWidth : 600);
-          
-          // #region agent log
-          fetch('http://127.0.0.1:7244/ingest/64a9c410-e2fc-4943-9e45-90055d9af790',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'assinatura-professor-modal.tsx:resizeCanvas',message:'Resize portrait',data:{containerWidth,canvasWidth,canvasHeight,isMobile,windowWidth:window.innerWidth},timestamp:Date.now(),runId:'run1',hypothesisId:'F'})}).catch(()=>{});
-          // #endregion
-          
+
           // Atualizar dimensões reais do canvas
-          canvas.width = canvasWidth;
-          canvas.height = canvasHeight;
+          canvas.width = Math.floor(canvasWidth * dpr);
+          canvas.height = Math.floor(canvasHeight * dpr);
           
           // Estilo para ocupar espaço proporcionalmente
           canvas.style.width = `${canvasWidth}px`;
@@ -131,10 +128,8 @@ export function AssinaturaProfessorModal({
           // Reconfigurar contexto
           const ctx = canvas.getContext("2d");
           if (ctx) {
-            ctx.strokeStyle = "#000";
-            ctx.lineWidth = isMobile ? 3 : 2;
-            ctx.lineCap = "round";
-            ctx.lineJoin = "round";
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            configureStroke(ctx, isMobile ? 4 : 3.5);
           }
           
           // Restaurar imagem se existir
@@ -162,7 +157,7 @@ export function AssinaturaProfessorModal({
         window.removeEventListener("orientationchange", resizeCanvas);
       };
     }
-  }, [open, modo, isLandscape]);
+  }, [open, modo, isLandscape, configureStroke]);
 
   // Limpar canvas quando modal fechar
   useEffect(() => {
@@ -341,6 +336,11 @@ export function AssinaturaProfessorModal({
     const { x, y } = getCoords(e);
     ctx.beginPath();
     ctx.moveTo(x, y);
+    ctx.lineTo(x + 0.01, y + 0.01);
+    ctx.stroke();
+    lastPointRef.current = { x, y };
+    lastMidPointRef.current = { x, y };
+    setDesenhou(true);
     setIsDrawing(true);
     desenhandoRef.current = true;
   }, [getCoords]);
@@ -353,8 +353,27 @@ export function AssinaturaProfessorModal({
     if (!ctx) return;
 
     const { x, y } = getCoords(e);
-    ctx.lineTo(x, y);
+    const lastPoint = lastPointRef.current;
+    const lastMidPoint = lastMidPointRef.current;
+
+    if (!lastPoint || !lastMidPoint) {
+      lastPointRef.current = { x, y };
+      lastMidPointRef.current = { x, y };
+      return;
+    }
+
+    const midPoint = {
+      x: (lastPoint.x + x) / 2,
+      y: (lastPoint.y + y) / 2,
+    };
+
+    ctx.beginPath();
+    ctx.moveTo(lastMidPoint.x, lastMidPoint.y);
+    ctx.quadraticCurveTo(lastPoint.x, lastPoint.y, midPoint.x, midPoint.y);
     ctx.stroke();
+
+    lastPointRef.current = { x, y };
+    lastMidPointRef.current = midPoint;
     setDesenhou(true);
     // Salvar estado do canvas após desenhar
     canvasImageRef.current = canvas.toDataURL("image/png");
@@ -363,6 +382,8 @@ export function AssinaturaProfessorModal({
   const stopDrawing = useCallback(() => {
     setIsDrawing(false);
     desenhandoRef.current = false;
+    lastPointRef.current = null;
+    lastMidPointRef.current = null;
   }, []);
 
   function limparCanvas() {
@@ -372,6 +393,8 @@ export function AssinaturaProfessorModal({
       ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
       setDesenhou(false);
       canvasImageRef.current = null;
+      lastPointRef.current = null;
+      lastMidPointRef.current = null;
     }
   }
 
@@ -621,7 +644,7 @@ export function AssinaturaProfessorModal({
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    💡 Dica: Rotacione para horizontal para ter mais espaço para assinar
+                    Dica: assine devagar e em horizontal para um traço mais natural
                   </p>
                 </>
               )}
