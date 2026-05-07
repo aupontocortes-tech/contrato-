@@ -61,8 +61,8 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <div style={{ padding: "24px" }}>
-      <h1 style={{ fontSize: "24px", fontWeight: 600, marginBottom: "24px", color: "#111827" }}>Dashboard</h1>
+    <div style={{ padding: "8px 4px 20px" }}>
+      <h1 style={{ fontSize: "30px", fontWeight: 700, marginBottom: "24px", color: "#0f172a", letterSpacing: "-0.02em" }}>Dashboard</h1>
       
       {/* Seção de boas-vindas com logo e mensagem */}
       <div style={{ 
@@ -71,7 +71,7 @@ export default function DashboardPage() {
         alignItems: "center", 
         justifyContent: "center",
         marginBottom: "32px",
-        padding: "24px 0"
+        padding: "20px 0 28px"
       }}>
         <div style={{ 
           maxWidth: "300px",
@@ -93,46 +93,46 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
         {/* Cards informativos */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
-          <div style={{ border: "1px solid #e5e7eb", borderRadius: "8px", backgroundColor: "#fff", padding: "16px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "18px" }}>
+          <div style={{ border: "1px solid #e2e8f0", borderRadius: "16px", backgroundColor: "#fff", padding: "18px", boxShadow: "0 6px 24px rgba(15,23,42,0.06)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
-                <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "4px" }}>Total de Alunos</p>
-                <p style={{ fontSize: "24px", fontWeight: 700, color: "#111827" }}>
+                <p style={{ fontSize: "14px", color: "#64748b", marginBottom: "6px", fontWeight: 500 }}>Total de Alunos</p>
+                <p style={{ fontSize: "28px", fontWeight: 700, color: "#0f172a", letterSpacing: "-0.02em" }}>
                   {loading ? "..." : stats.totalAlunos}
                 </p>
               </div>
-              <div style={{ padding: "8px", backgroundColor: "#eff6ff", borderRadius: "8px" }}>
-                <Users style={{ width: "20px", height: "20px", color: "#2563eb" }} />
+              <div style={{ padding: "10px", backgroundColor: "#eef2ff", borderRadius: "12px" }}>
+                <Users style={{ width: "20px", height: "20px", color: "#4f46e5" }} />
               </div>
             </div>
           </div>
 
-          <div style={{ border: "1px solid #e5e7eb", borderRadius: "8px", backgroundColor: "#fff", padding: "16px" }}>
+          <div style={{ border: "1px solid #e2e8f0", borderRadius: "16px", backgroundColor: "#fff", padding: "18px", boxShadow: "0 6px 24px rgba(15,23,42,0.06)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
-                <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "4px" }}>Contratos Ativos</p>
-                <p style={{ fontSize: "24px", fontWeight: 700, color: "#111827" }}>
+                <p style={{ fontSize: "14px", color: "#64748b", marginBottom: "6px", fontWeight: 500 }}>Contratos Ativos</p>
+                <p style={{ fontSize: "28px", fontWeight: 700, color: "#0f172a", letterSpacing: "-0.02em" }}>
                   {loading ? "..." : stats.contratosAtivos}
                 </p>
               </div>
-              <div style={{ padding: "8px", backgroundColor: "#f0fdf4", borderRadius: "8px" }}>
+              <div style={{ padding: "10px", backgroundColor: "#ecfeff", borderRadius: "12px" }}>
                 <FileText style={{ width: "20px", height: "20px", color: "#16a34a" }} />
               </div>
             </div>
           </div>
 
-          <div style={{ border: "1px solid #e5e7eb", borderRadius: "8px", backgroundColor: "#fff", padding: "16px" }}>
+          <div style={{ border: "1px solid #e2e8f0", borderRadius: "16px", backgroundColor: "#fff", padding: "18px", boxShadow: "0 6px 24px rgba(15,23,42,0.06)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
-                <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "4px" }}>Pendentes</p>
-                <p style={{ fontSize: "24px", fontWeight: 700, color: "#111827" }}>
+                <p style={{ fontSize: "14px", color: "#64748b", marginBottom: "6px", fontWeight: 500 }}>Pendentes</p>
+                <p style={{ fontSize: "28px", fontWeight: 700, color: "#0f172a", letterSpacing: "-0.02em" }}>
                   {loading ? "..." : stats.contratosPendentes}
                 </p>
               </div>
-              <div style={{ padding: "8px", backgroundColor: "#fffbeb", borderRadius: "8px" }}>
+              <div style={{ padding: "10px", backgroundColor: "#fff7ed", borderRadius: "12px" }}>
                 <Clock style={{ width: "20px", height: "20px", color: "#ea580c" }} />
               </div>
             </div>
@@ -145,16 +145,17 @@ export default function DashboardPage() {
             <button
               style={{
                 padding: "12px 24px",
-                backgroundColor: "#2563eb",
+                backgroundColor: "#4f46e5",
                 color: "#fff",
                 border: "none",
-                borderRadius: "6px",
+                borderRadius: "10px",
                 fontSize: "16px",
-                fontWeight: 500,
+                fontWeight: 600,
                 cursor: "pointer",
+                boxShadow: "0 8px 22px rgba(79,70,229,0.28)",
               }}
-              onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#1d4ed8")}
-              onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#2563eb")}
+              onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#4338ca")}
+              onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#4f46e5")}
             >
               Criar novo contrato
             </button>
@@ -173,10 +174,10 @@ export default function DashboardPage() {
               marginBottom: 8,
               padding: "8px 0",
               minWidth: 120,
-              borderRadius: 8,
-              border: "1px solid #e5e7eb",
+              borderRadius: 12,
+              border: "1px solid #e2e8f0",
               backgroundColor: "#fff",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+              boxShadow: "0 10px 30px rgba(15,23,42,0.12)",
             }}
           >
             <button
@@ -222,12 +223,12 @@ export default function DashboardPage() {
             width: 40,
             height: 40,
             borderRadius: "50%",
-            border: "1px solid #e5e7eb",
+            border: "1px solid #e2e8f0",
             background: "#fff",
             color: "#6b7280",
             fontSize: 18,
             cursor: "pointer",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+            boxShadow: "0 8px 20px rgba(15,23,42,0.12)",
           }}
           aria-label="Abrir modo da tela"
         >

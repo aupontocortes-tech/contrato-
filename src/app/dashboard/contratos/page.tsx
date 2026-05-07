@@ -37,10 +37,10 @@ function isPlanoList(value: unknown): value is Plano[] {
   return Array.isArray(value) && value.every((item) => item != null && typeof item.id === "number");
 }
 
-const btnPrimary = { padding: "8px 16px", borderRadius: "6px", border: "none", backgroundColor: "#2563eb", color: "#fff", fontWeight: 500, cursor: "pointer", fontSize: "14px" };
-const btnSecondary = { padding: "8px 16px", borderRadius: "6px", border: "1px solid #d1d5db", backgroundColor: "#fff", color: "#374151", fontWeight: 500, cursor: "pointer", fontSize: "14px" };
-const inputSelect = { padding: "8px 12px", borderRadius: "6px", border: "1px solid #d1d5db", backgroundColor: "#fff", fontSize: "14px", minWidth: "200px", width: "100%" };
-const card = { backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: "8px", padding: "20px", marginBottom: "16px", boxShadow: "0 1px 3px rgba(0,0,0,0.08)" };
+const btnPrimary = { padding: "10px 18px", borderRadius: "10px", border: "none", backgroundColor: "#4f46e5", color: "#fff", fontWeight: 600, cursor: "pointer", fontSize: "14px", boxShadow: "0 8px 20px rgba(79,70,229,0.25)" };
+const btnSecondary = { padding: "10px 18px", borderRadius: "10px", border: "1px solid #cbd5e1", backgroundColor: "#fff", color: "#1f2937", fontWeight: 600, cursor: "pointer", fontSize: "14px" };
+const inputSelect = { padding: "10px 12px", borderRadius: "10px", border: "1px solid #cbd5e1", backgroundColor: "#fff", fontSize: "14px", minWidth: "200px", width: "100%" };
+const card = { backgroundColor: "#fff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "22px", marginBottom: "18px", boxShadow: "0 8px 24px rgba(15,23,42,0.07)" };
 
 export default function ContratosPage() {
   const [contratos, setContratos] = useState<Contrato[]>([]);
@@ -201,7 +201,12 @@ export default function ContratosPage() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      <h1 style={{ fontSize: "24px", fontWeight: 600, color: "#111827" }}>Contratos</h1>
+      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+        <h1 style={{ fontSize: "32px", fontWeight: 700, color: "#0f172a", letterSpacing: "-0.02em" }}>Contratos</h1>
+        <span style={{ fontSize: "12px", backgroundColor: "#e0e7ff", color: "#3730a3", padding: "6px 10px", borderRadius: "999px", fontWeight: 700 }}>
+          Gestão profissional
+        </span>
+      </div>
 
       {!loading && loadingOrErrorAlunosPlanos && (
         <div style={{ ...card, backgroundColor: "#fffbeb", borderColor: "#fcd34d" }}>
@@ -298,7 +303,7 @@ export default function ContratosPage() {
           </div>
         )}
         {screenState === "success" && (
-          <div style={{ borderTop: "1px solid #e5e7eb" }}>
+          <div style={{ borderTop: "1px solid #e2e8f0" }}>
             {contratos.map((c) => {
               const assinado = c.status === "assinado";
               const professorAssinou = !!c.assinatura_professor_url || c.status === "professor_assinado" || c.status === "assinado";
@@ -309,16 +314,17 @@ export default function ContratosPage() {
                   key={c.id}
                   style={{
                     padding: "20px",
-                    borderBottom: "1px solid #e5e7eb",
+                    borderBottom: "1px solid #e2e8f0",
+                    background: "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
                   }}
                 >
                   <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                     <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "16px" }}>
                       <div>
-                        <div style={{ fontWeight: 600, color: "#111827", marginBottom: "4px" }}>
+                        <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: "4px", letterSpacing: "-0.01em" }}>
                           {c.aluno.nome_completo} · {c.plano.nome_plano.replace(/_/g, " ")}
                         </div>
-                        <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "8px" }}>
+                        <p style={{ fontSize: "14px", color: "#64748b", marginBottom: "10px" }}>
                           {new Date(c.data_inicio).toLocaleDateString("pt-BR")} a {new Date(c.data_fim).toLocaleDateString("pt-BR")}
                         </p>
                         <span
@@ -326,10 +332,10 @@ export default function ContratosPage() {
                             display: "inline-block",
                             fontSize: "12px",
                             fontWeight: 500,
-                            padding: "4px 10px",
-                            borderRadius: "4px",
-                            backgroundColor: assinado ? "#dcfce7" : professorAssinou ? "#dbeafe" : "#ffedd5",
-                            color: assinado ? "#166534" : professorAssinou ? "#1d4ed8" : "#c2410c",
+                            padding: "5px 12px",
+                            borderRadius: "999px",
+                            backgroundColor: assinado ? "#dcfce7" : professorAssinou ? "#e0e7ff" : "#ffedd5",
+                            color: assinado ? "#166534" : professorAssinou ? "#4338ca" : "#c2410c",
                           }}
                         >
                           {assinado ? "Assinado" : professorAssinou ? "Aguardando aluno" : "Pendente"}
@@ -384,15 +390,15 @@ export default function ContratosPage() {
                         )}
                       </div>
                     </div>
-                    <div style={{ paddingTop: "8px", borderTop: "1px solid #f3f4f6" }}>
+                    <div style={{ paddingTop: "10px", borderTop: "1px solid #e2e8f0" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap", marginBottom: "8px" }}>
-                        <span style={{ fontSize: "12px", fontWeight: 500, color: "#6b7280" }}>Assinatura do Professor:</span>
+                        <span style={{ fontSize: "12px", fontWeight: 600, color: "#64748b" }}>Assinatura do Professor:</span>
                         {c.assinatura_professor_url ? (
                           <>
                             <img
                               src={c.assinatura_professor_url}
                               alt="Assinatura do professor"
-                              style={{ height: "48px", border: "1px solid #e5e7eb", borderRadius: "4px", backgroundColor: "#fff" }}
+                              style={{ height: "48px", border: "1px solid #cbd5e1", borderRadius: "8px", backgroundColor: "#fff" }}
                             />
                             <button
                               type="button"
@@ -400,7 +406,7 @@ export default function ContratosPage() {
                                 setContratoParaAssinar(c.id);
                                 setModalAssinaturaOpen(true);
                               }}
-                              style={{ ...btnSecondary, padding: "4px 8px", fontSize: "12px" }}
+                              style={{ ...btnSecondary, padding: "6px 10px", fontSize: "12px" }}
                             >
                               Alterar
                             </button>
@@ -470,10 +476,10 @@ export default function ContratosPage() {
             style={{
               backgroundColor: "#fff",
               padding: "24px",
-              borderRadius: "8px",
+              borderRadius: "16px",
               maxWidth: "360px",
               width: "90%",
-              boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+              boxShadow: "0 20px 45px rgba(15,23,42,0.2)",
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -492,8 +498,8 @@ export default function ContratosPage() {
               style={{
                 width: "100%",
                 padding: "10px 12px",
-                borderRadius: "6px",
-                border: "1px solid #d1d5db",
+                borderRadius: "10px",
+                border: "1px solid #cbd5e1",
                 fontSize: "16px",
                 marginBottom: "16px",
                 boxSizing: "border-box",
@@ -538,7 +544,7 @@ export default function ContratosPage() {
                     setExcluindo(false);
                   }
                 }}
-                style={{ ...btnPrimary, backgroundColor: "#b91c1c" }}
+                style={{ ...btnPrimary, backgroundColor: "#b91c1c", boxShadow: "0 8px 20px rgba(185,28,28,0.25)" }}
               >
                 {excluindo ? "Excluindo..." : "Confirmar exclusão"}
               </button>

@@ -14,9 +14,12 @@ export async function GET() {
   try {
     const list = await prisma.plano.findMany({ orderBy: { id: "asc" } });
     if (list.length > 0) return NextResponse.json(list);
+    return NextResponse.json(PLANOS_FALLBACK);
   } catch (e) {
     console.error("GET /api/planos:", e);
-    // Banco não configurado ou indisponível — retorna fallback para não quebrar o frontend
+    return NextResponse.json(
+      { error: "Erro ao carregar planos. Verifique a conexão com o banco." },
+      { status: 503 }
+    );
   }
-  return NextResponse.json(PLANOS_FALLBACK);
 }

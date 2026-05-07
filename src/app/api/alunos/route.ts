@@ -20,8 +20,10 @@ export async function GET() {
     return NextResponse.json(list);
   } catch (e) {
     console.error("GET /api/alunos:", e);
-    // Retorna array vazio em caso de erro para não quebrar o frontend
-    return NextResponse.json([]);
+    return NextResponse.json(
+      { error: "Erro ao carregar alunos. Verifique a conexão com o banco." },
+      { status: 503 }
+    );
   }
 }
 
