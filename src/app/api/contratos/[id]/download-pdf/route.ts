@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import path from "path";
+import fs from "fs/promises";
 import { prisma } from "@/lib/prisma";
 import { getContratoEstruturado } from "@/lib/contrato-template";
 import { gerarPdfAssinado } from "@/lib/gerar-pdf";
@@ -30,6 +32,35 @@ export async function GET(
         { error: "Contrato ainda não foi assinado" },
         { status: 400 }
       );
+    }
+
+    // Se houver PDF assinado enviado via GOV, retorna ele diretamente
+    if (contrato.pdf_url) {
+      if (contrato.pdf_url.startsWith("data:application/pdf;base64,")) {
+        const base64 = contrato.pdf_url.replace(/^data:application\/pdf;base64,/, "");
+        const pdfBuffer = Buffer.from(base64, "base64");
+        return new NextResponse(Buffer.from(pdfBuffer), {
+          headers: {
+            "Content-Type": "application/pdf",
+            "Content-Disposition": `attachment; filename="contrato-${contratoId}.pdf"`,
+          },
+        });
+      }
+
+      if (contrato.pdf_url.startsWith("/")) {
+        const filePath = path.join(process.cwd(), "public", contrato.pdf_url.replace(/^\//, ""));
+        try {
+          const pdfBuffer = await fs.readFile(filePath);
+          return new NextResponse(Buffer.from(pdfBuffer), {
+            headers: {
+              "Content-Type": "application/pdf",
+              "Content-Disposition": `attachment; filename="contrato-${contratoId}.pdf"`,
+            },
+          });
+        } catch {
+          // Se não encontrar no disco, continua para fallback de geração
+        }
+      }
     }
 
     // Preparar dados do contrato

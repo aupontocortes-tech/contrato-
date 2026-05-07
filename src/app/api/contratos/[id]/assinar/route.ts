@@ -52,59 +52,94 @@ export async function POST(
     // Processar assinatura
     const body = await request.json();
     const signature = body?.signature as string | undefined;
+    const signedPdf = body?.signed_pdf as string | undefined;
+    const signedPdfName = body?.signed_pdf_name as string | undefined;
+    const method = body?.method as "gov" | "manual" | undefined;
 
-    if (!signature || typeof signature !== "string") {
+    const isGovFlow = method === "gov";
+
+    if (isGovFlow) {
+      if (!signedPdf || typeof signedPdf !== "string") {
+        return NextResponse.json(
+          { error: "PDF assinado no GOV é obrigatório." },
+          { status: 400 }
+        );
+      }
+      if (!signedPdf.startsWith("data:application/pdf")) {
+        return NextResponse.json(
+          { error: "Formato inválido. Envie um arquivo PDF assinado." },
+          { status: 400 }
+        );
+      }
+    } else if (!signature || typeof signature !== "string") {
       return NextResponse.json(
         { error: "Assinatura de próprio punho é obrigatória." },
         { status: 400 }
       );
     }
-
-    // Verificar se é um data URL válido
-    if (!signature.startsWith("data:image")) {
+    if (!isGovFlow && !signature!.startsWith("data:image")) {
       return NextResponse.json(
         { error: "Formato de assinatura inválido." },
         { status: 400 }
       );
     }
 
-    // Extrair base64
-    let base64: string;
-    if (signature.startsWith("data:image")) {
-      base64 = signature.replace(/^data:image\/[a-z]+;base64,/, "");
+    let assinaturaUrl: string | null = null;
+    let pdfUrl: string | null = contrato.pdf_url ?? null;
+
+    if (isGovFlow) {
+      // Salva PDF assinado enviado pelo aluno
+      const pdfBase64 = signedPdf!.replace(/^data:application\/pdf;base64,/, "");
+      if (!pdfBase64 || pdfBase64.trim().length === 0) {
+        return NextResponse.json(
+          { error: "Dados do PDF inválidos." },
+          { status: 400 }
+        );
+      }
+
+      const pdfBuffer = Buffer.from(pdfBase64, "base64");
+      const safeName = (signedPdfName || "").replace(/[^a-zA-Z0-9._-]/g, "_");
+      const fileName = safeName
+        ? `assinado-gov-${contratoId}-${safeName}`
+        : `assinado-gov-${contratoId}.pdf`;
+
+      const publicDir = path.join(process.cwd(), "public", "contratos");
+      const publicPath = path.join(publicDir, fileName);
+
+      try {
+        await fs.mkdir(publicDir, { recursive: true });
+        await fs.writeFile(publicPath, pdfBuffer);
+        pdfUrl = `/contratos/${fileName}`;
+      } catch (error: any) {
+        console.error("Erro ao salvar PDF assinado em public:", error);
+        pdfUrl = signedPdf!;
+      }
     } else {
-      base64 = signature;
-    }
+      // Fluxo manual: salva assinatura em imagem para compor PDF assinado
+      const base64 = signature!.replace(/^data:image\/[a-z]+;base64,/, "");
+      if (!base64 || base64.trim().length === 0) {
+        return NextResponse.json(
+          { error: "Dados da imagem inválidos." },
+          { status: 400 }
+        );
+      }
 
-    if (!base64 || base64.trim().length === 0) {
-      return NextResponse.json(
-        { error: "Dados da imagem inválidos." },
-        { status: 400 }
-      );
-    }
+      const buffer = Buffer.from(base64, "base64");
+      const fileName = `assinar-${contratoId}.png`;
+      const publicDir = path.join(process.cwd(), "public", "contratos");
+      const publicPath = path.join(publicDir, fileName);
 
-    // Salvar arquivo
-    // Em Vercel (serverless), /public é somente leitura em runtime
-    // Vamos tentar salvar em /public/contratos (se existir) e fallback para DB
-    const buffer = Buffer.from(base64, "base64");
-    const fileName = `assinar-${contratoId}.png`;
-
-    let assinaturaUrl: string;
-    const publicDir = path.join(process.cwd(), "public", "contratos");
-    const publicPath = path.join(publicDir, fileName);
-
-    try {
-      // Tentar criar diretório e salvar em public (funciona em desenvolvimento)
-      await fs.mkdir(publicDir, { recursive: true });
-      await fs.writeFile(publicPath, buffer);
-      assinaturaUrl = `/contratos/${fileName}`;
-    } catch (error: any) {
-      // Se falhar, pode ser ambiente serverless (Vercel)
-      // Em produção, vamos salvar a assinatura como data URL no banco
-      console.error("Erro ao salvar em public:", error);
-
-      // Salvar como data URL diretamente no banco (solução para Vercel)
-      assinaturaUrl = signature; // Usar o data URL completo como URL
+      try {
+        // Tentar criar diretório e salvar em public (funciona em desenvolvimento)
+        await fs.mkdir(publicDir, { recursive: true });
+        await fs.writeFile(publicPath, buffer);
+        assinaturaUrl = `/contratos/${fileName}`;
+      } catch (error: any) {
+        // Se falhar, pode ser ambiente serverless (Vercel)
+        // Em produção, salvar a assinatura como data URL no banco
+        console.error("Erro ao salvar em public:", error);
+        assinaturaUrl = signature!;
+      }
     }
 
     // Atualizar banco de dados com timeout
@@ -114,7 +149,8 @@ export async function POST(
           where: { id: contratoId },
           data: {
             status: "assinado",
-            assinatura_url: assinaturaUrl,
+            assinatura_url: assinaturaUrl ?? contrato.assinatura_url ?? null,
+            pdf_url: pdfUrl,
             data_assinatura: new Date(),
           },
         }),

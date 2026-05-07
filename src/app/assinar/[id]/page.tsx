@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DocumentoContrato } from "@/components/DocumentoContrato";
 import { toast } from "sonner";
-import { PenLine, Eraser, Upload, RotateCw, Download, X } from "lucide-react";
+import { PenLine, Eraser, RotateCw, Download, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -44,8 +44,9 @@ export default function AssinarPage() {
   const [desenhou, setDesenhou] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
   const desenhandoRef = useRef(false);
-  const [modo, setModo] = useState<"colar" | "manual">("manual");
-  const [imagemUrl, setImagemUrl] = useState<string>("");
+  const [modo, setModo] = useState<"gov" | "manual">("manual");
+  const [govSignedFileName, setGovSignedFileName] = useState<string>("");
+  const [govSignedDataUrl, setGovSignedDataUrl] = useState<string>("");
   const [isLandscape, setIsLandscape] = useState(false);
   const canvasImageRef = useRef<string | null>(null);
 
@@ -135,36 +136,25 @@ export default function AssinarPage() {
     canvasImageRef.current = null;
   }, []);
 
-  function handlePaste(e: React.ClipboardEvent) {
-    e.preventDefault();
-    const items = e.clipboardData.items;
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      if (item.type.startsWith("image/")) {
-        const file = item.getAsFile();
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = (event) => {
-            setImagemUrl(event.target?.result as string);
-            setModo("colar");
-          };
-          reader.readAsDataURL(file);
-        }
-      }
-    }
-  }
-
-  function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  const handleGovSignedUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && file.type.startsWith("image/")) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setImagemUrl(event.target?.result as string);
-        setModo("colar");
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+    const allowed =
+      file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+    if (!allowed) {
+      toast.error("Envie o PDF assinado no GOV (arquivo .pdf).");
+      return;
     }
-  }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setGovSignedDataUrl((event.target?.result as string) || "");
+      setGovSignedFileName(file.name);
+      setModo("gov");
+      setDesenhou(true);
+    };
+    reader.readAsDataURL(file);
+  }, []);
 
   // Função para rotacionar a tela para horizontal
   const toggleLandscape = useCallback(async () => {
@@ -393,14 +383,16 @@ export default function AssinarPage() {
     setAssinando(true);
     try {
       let assinaturaDataUrl: string;
+      let signedPdfDataUrl: string | undefined;
 
-      if (modo === "colar") {
-        if (!imagemUrl) {
-          toast.error("Cole ou faça upload de uma imagem de assinatura");
+      if (modo === "gov") {
+        if (!govSignedDataUrl) {
+          toast.error("Baixe, assine no GOV e envie o PDF assinado.");
           setAssinando(false);
           return;
         }
-        assinaturaDataUrl = imagemUrl;
+        assinaturaDataUrl = "";
+        signedPdfDataUrl = govSignedDataUrl;
       } else {
         if (!canvasRef.current) {
           toast.error("Erro: Canvas não encontrado");
@@ -445,7 +437,12 @@ export default function AssinarPage() {
       const res = await fetch(`/api/contratos/${id}/assinar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ signature: assinaturaDataUrl }),
+        body: JSON.stringify({
+          signature: assinaturaDataUrl || undefined,
+          signed_pdf: signedPdfDataUrl,
+          signed_pdf_name: govSignedFileName || undefined,
+          method: modo,
+        }),
       });
 
       const data = await res.json();
@@ -459,7 +456,8 @@ export default function AssinarPage() {
       }
 
       toast.success("Contrato assinado com sucesso!");
-      setImagemUrl("");
+      setGovSignedDataUrl("");
+      setGovSignedFileName("");
       setDesenhou(false);
       canvasImageRef.current = null;
       setContrato((c) => (c ? { ...c, status: "assinado" } : null));
@@ -603,28 +601,28 @@ export default function AssinarPage() {
         </div>
       </section>
 
-      {/* Bloco de assinatura do cliente — igual ao do professor: colar GOV ou desenhar, com rotação */}
+      {/* Bloco de assinatura do cliente — opção GOV + assinatura manual */}
       <section className="flex-shrink-0 p-4 pt-0 border-t border-border bg-background/95">
         <div className="max-w-2xl mx-auto space-y-3">
           <h2 className="text-base font-semibold">Assinatura do cliente</h2>
           <p className="text-sm text-muted-foreground">
-            Cole a assinatura do GOV ou desenhe com o dedo. No celular, use rotação para horizontal para mais espaço.
+            Você pode assinar no GOV e enviar o PDF assinado ou assinar com o dedo aqui no app.
           </p>
           
-          {/* Seleção de modo — mesmo tipo de assinatura que o professor */}
+          {/* Seleção de modo */}
           <div className="flex gap-2">
             <Button
               type="button"
-              variant={modo === "colar" ? "default" : "outline"}
+              variant={modo === "gov" ? "default" : "outline"}
               size="sm"
               onClick={() => {
-                setModo("colar");
-                setDesenhou(!!imagemUrl);
+                setModo("gov");
+                setDesenhou(!!govSignedDataUrl);
               }}
               className="flex-1"
             >
-              <Upload className="size-4 mr-2" />
-              Colar assinatura (GOV)
+              <Download className="size-4 mr-2" />
+              Assinar no GOV
             </Button>
             <Button
               type="button"
@@ -632,7 +630,7 @@ export default function AssinarPage() {
               size="sm"
               onClick={() => {
                 setModo("manual");
-                setImagemUrl("");
+                setDesenhou(!!canvasImageRef.current);
               }}
               className="flex-1"
             >
@@ -641,42 +639,55 @@ export default function AssinarPage() {
             </Button>
           </div>
 
-          {/* Modo colar */}
-          {modo === "colar" && (
+          {/* Modo GOV */}
+          {modo === "gov" && (
             <div className="space-y-3">
-              <div
-                onPaste={handlePaste}
-                className="border-2 border-dashed border-muted-foreground/40 rounded-lg p-4 bg-white"
-              >
-                <Label htmlFor="upload-assinatura" className="text-sm font-medium block mb-2">
-                  Cole a assinatura do GOV aqui (Ctrl+V) ou faça upload da imagem:
-                </Label>
+              <div className="border rounded-lg p-4 bg-white space-y-3">
+                <div className="grid gap-2">
+                  <Label className="text-sm font-medium">1) Baixe o contrato</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => window.open(`/api/contratos/${id}/download-pdf`, "_blank")}
+                  >
+                    <Download className="size-4 mr-2" />
+                    Baixar contrato (PDF)
+                  </Button>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label className="text-sm font-medium">2) Assine no GOV e salve o PDF no celular/computador</Label>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="upload-assinatura-gov" className="text-sm font-medium">
+                    3) Envie o PDF assinado para finalizar:
+                  </Label>
+                </div>
                 <Input
-                  id="upload-assinatura"
+                  id="upload-assinatura-gov"
                   type="file"
-                  accept="image/*"
-                  onChange={handleFileUpload}
-                  className="mb-2"
+                  accept="application/pdf,.pdf"
+                  onChange={handleGovSignedUpload}
                 />
-                {imagemUrl && (
-                  <div className="mt-3">
-                    <img
-                      src={imagemUrl}
-                      alt="Assinatura colada"
-                      className="max-w-full h-auto max-h-48 mx-auto border border-gray-300 rounded"
-                    />
+                {govSignedDataUrl && (
+                  <div className="rounded border border-emerald-200 bg-emerald-50 p-3">
+                    <p className="text-sm font-medium text-emerald-800">
+                      PDF assinado recebido: {govSignedFileName || "arquivo.pdf"}
+                    </p>
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        setImagemUrl("");
+                        setGovSignedDataUrl("");
+                        setGovSignedFileName("");
                         setDesenhou(false);
                       }}
                       className="w-full mt-2"
                     >
                       <X className="size-4 mr-2" />
-                      Remover imagem
+                      Remover PDF enviado
                     </Button>
                   </div>
                 )}
@@ -809,10 +820,10 @@ export default function AssinarPage() {
             className="w-full h-12 text-base"
             size="lg"
             onClick={handleAssinar}
-            disabled={assinando || (modo === "colar" ? !imagemUrl : !desenhou)}
+            disabled={assinando || (modo === "gov" ? !govSignedDataUrl : !desenhou)}
           >
             <PenLine className="size-5 mr-2" />
-            {assinando ? "Registrando..." : "Confirmar assinatura"}
+            {assinando ? "Registrando..." : modo === "gov" ? "Enviar PDF assinado e concluir" : "Confirmar assinatura"}
           </Button>
         </div>
       </section>
