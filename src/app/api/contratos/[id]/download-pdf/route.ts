@@ -3,7 +3,7 @@ import path from "path";
 import fs from "fs/promises";
 import { prisma } from "@/lib/prisma";
 import { getContratoEstruturado } from "@/lib/contrato-template";
-import { gerarPdfAssinado } from "@/lib/gerar-pdf";
+import { gerarPdfAssinado, gerarPdfFromContrato } from "@/lib/gerar-pdf";
 
 export async function GET(
   request: Request,
@@ -26,15 +26,7 @@ export async function GET(
       return NextResponse.json({ error: "Contrato não encontrado" }, { status: 404 });
     }
 
-    // Verificar se o contrato está assinado
-    if (contrato.status !== "assinado") {
-      return NextResponse.json(
-        { error: "Contrato ainda não foi assinado" },
-        { status: 400 }
-      );
-    }
-
-    // Se houver PDF assinado enviado via GOV, retorna ele diretamente
+    // Se houver PDF já salvo (pré-gerado ou assinado via GOV), retorna ele diretamente
     if (contrato.pdf_url) {
       if (contrato.pdf_url.startsWith("data:application/pdf;base64,")) {
         const base64 = contrato.pdf_url.replace(/^data:application\/pdf;base64,/, "");
@@ -75,6 +67,17 @@ export async function GET(
       dataFim: contrato.data_fim,
     };
     const contratoEstruturado = getContratoEstruturado(contratoParams);
+
+    // Se ainda não estiver assinado, retorna o PDF base do contrato
+    if (contrato.status !== "assinado") {
+      const pdfBuffer = await gerarPdfFromContrato(contratoEstruturado);
+      return new NextResponse(Buffer.from(pdfBuffer), {
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Disposition": `attachment; filename="contrato-${contratoId}.pdf"`,
+        },
+      });
+    }
 
     // Converter datas (Prisma retorna Date) para string para gerarPdfAssinado
     const dataProfessor =
