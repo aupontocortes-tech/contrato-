@@ -39,32 +39,7 @@ function isPlanoList(value: unknown): value is Plano[] {
   return Array.isArray(value) && value.every((item) => item != null && typeof item.id === "number");
 }
 
-const btnPrimary = { padding: "10px 18px", borderRadius: "10px", border: "none", backgroundColor: "#4f46e5", color: "#fff", fontWeight: 600, cursor: "pointer", fontSize: "14px", boxShadow: "0 8px 20px rgba(79,70,229,0.25)" };
-const btnSecondary = { padding: "10px 18px", borderRadius: "10px", border: "1px solid #cbd5e1", backgroundColor: "#fff", color: "#1f2937", fontWeight: 600, cursor: "pointer", fontSize: "14px" };
-const btnAction: CSSProperties = {
-  padding: "0 14px",
-  minHeight: "40px",
-  borderRadius: "8px",
-  border: "1px solid #cbd5e1",
-  backgroundColor: "#fff",
-  color: "#334155",
-  fontWeight: 600,
-  cursor: "pointer",
-  fontSize: "13px",
-  lineHeight: 1.2,
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  whiteSpace: "nowrap",
-  boxSizing: "border-box",
-  textDecoration: "none",
-};
-const btnDanger: CSSProperties = {
-  ...btnAction,
-  color: "#b91c1c",
-  borderColor: "#fecaca",
-  backgroundColor: "#fff",
-};
+/** Classes de botão — ver bloco <style> no componente (ct-btn). */
 const inputSelect = { padding: "10px 12px", borderRadius: "10px", border: "1px solid #cbd5e1", backgroundColor: "#fff", fontSize: "14px", minWidth: "200px", width: "100%" };
 const card = { backgroundColor: "#fff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "22px", marginBottom: "18px", boxShadow: "0 8px 24px rgba(15,23,42,0.07)" };
 const contratoItemCard: CSSProperties = {
@@ -127,15 +102,24 @@ export default function ContratosPage() {
         method: "POST",
         body: fd,
       });
-      const data = await res.json();
+      const raw = await res.text();
+      let data: { ok?: boolean; error?: string } = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        data = { error: raw?.slice(0, 120) || "Resposta inválida do servidor." };
+      }
       if (!res.ok || !data.ok) {
         toast.error(data.error || "Erro ao enviar arquivo.");
         return;
       }
       toast.success("Contrato assinado salvo no aplicativo.");
       load();
-    } catch {
-      toast.error("Erro de conexão ao enviar arquivo.");
+    } catch (e) {
+      console.error("upload contrato assinado:", e);
+      toast.error(
+        e instanceof Error ? e.message : "Erro de conexão ao enviar arquivo. Verifique a internet."
+      );
     } finally {
       setUploadingId(null);
     }
@@ -292,6 +276,84 @@ export default function ContratosPage() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       <style>{`
+        .ct-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.35rem;
+          min-height: 40px;
+          padding: 0 16px;
+          border-radius: 10px;
+          font-size: 13px;
+          font-weight: 600;
+          letter-spacing: 0.02em;
+          line-height: 1.2;
+          white-space: nowrap;
+          box-sizing: border-box;
+          cursor: pointer;
+          text-decoration: none;
+          font-family: inherit;
+          transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+          border: 1px solid #e2e8f0;
+          background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+          color: #334155;
+          box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 0 0 1px rgba(255, 255, 255, 0.8) inset;
+        }
+        .ct-btn:hover:not(:disabled) {
+          border-color: #c7d2fe;
+          color: #3730a3;
+          background: linear-gradient(180deg, #ffffff 0%, #eef2ff 100%);
+          box-shadow: 0 4px 14px rgba(99, 102, 241, 0.18), 0 0 0 1px rgba(255, 255, 255, 0.9) inset;
+          transform: translateY(-1px);
+        }
+        .ct-btn:active:not(:disabled) {
+          transform: translateY(0);
+          box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+        }
+        .ct-btn:focus-visible {
+          outline: none;
+          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.35);
+        }
+        .ct-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          transform: none;
+        }
+        .ct-btn--primary {
+          border-color: #4338ca;
+          background: linear-gradient(180deg, #6366f1 0%, #4f46e5 55%, #4338ca 100%);
+          color: #fff;
+          box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35), 0 1px 0 rgba(255, 255, 255, 0.2) inset;
+        }
+        .ct-btn--primary:hover:not(:disabled) {
+          border-color: #3730a3;
+          color: #fff;
+          background: linear-gradient(180deg, #4f46e5 0%, #4338ca 100%);
+          box-shadow: 0 6px 20px rgba(79, 70, 229, 0.45), 0 1px 0 rgba(255, 255, 255, 0.15) inset;
+        }
+        .ct-btn--danger {
+          border-color: #fecaca;
+          background: linear-gradient(180deg, #fff 0%, #fef2f2 100%);
+          color: #dc2626;
+        }
+        .ct-btn--danger:hover:not(:disabled) {
+          border-color: #f87171;
+          color: #b91c1c;
+          background: linear-gradient(180deg, #fef2f2 0%, #fee2e2 100%);
+          box-shadow: 0 4px 14px rgba(220, 38, 38, 0.15);
+        }
+        .ct-btn--danger-solid {
+          border-color: #b91c1c;
+          background: linear-gradient(180deg, #ef4444 0%, #dc2626 55%, #b91c1c 100%);
+          color: #fff;
+          box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35), 0 1px 0 rgba(255, 255, 255, 0.2) inset;
+        }
+        .ct-btn--danger-solid:hover:not(:disabled) {
+          border-color: #991b1b;
+          color: #fff;
+          background: linear-gradient(180deg, #dc2626 0%, #b91c1c 100%);
+          box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
+        }
         @media (max-width: 960px) {
           .contrato-card-top {
             grid-template-columns: 1fr !important;
@@ -386,10 +448,10 @@ export default function ContratosPage() {
               </select>
             </div>
             <div style={{ display: "flex", gap: "8px" }}>
-              <button type="submit" disabled={creating || !canCreateContract} style={btnPrimary}>
+              <button type="submit" disabled={creating || !canCreateContract} className="ct-btn ct-btn--primary">
                 {creating ? "Criando..." : "Criar contrato"}
               </button>
-              <button type="button" onClick={() => setShowForm(false)} style={btnSecondary}>
+              <button type="button" onClick={() => setShowForm(false)} className="ct-btn">
                 Cancelar
               </button>
             </div>
@@ -398,7 +460,7 @@ export default function ContratosPage() {
       )}
 
       {!showForm && (
-        <button onClick={() => setShowForm(true)} style={btnSecondary}>
+        <button type="button" onClick={() => setShowForm(true)} className="ct-btn ct-btn--primary">
           + Criar novo contrato
         </button>
       )}
@@ -410,7 +472,7 @@ export default function ContratosPage() {
         {screenState === "error" && (
           <div style={{ padding: "48px", textAlign: "center" }}>
             <p style={{ marginBottom: "8px", color: "#374151" }}>{errorContratos ?? "Erro ao carregar contratos."}</p>
-            <button onClick={() => load()} style={btnSecondary}>
+            <button type="button" onClick={() => load()} className="ct-btn">
               Tentar novamente
             </button>
           </div>
@@ -418,7 +480,7 @@ export default function ContratosPage() {
         {screenState === "empty" && (
           <div style={{ padding: "48px", textAlign: "center" }}>
             <p style={{ marginBottom: "8px", color: "#374151" }}>Nenhum contrato cadastrado.</p>
-            <button onClick={() => setShowForm(true)} style={btnSecondary}>
+            <button type="button" onClick={() => setShowForm(true)} className="ct-btn ct-btn--primary">
               Criar primeiro contrato
             </button>
           </div>
@@ -512,12 +574,17 @@ export default function ContratosPage() {
                       <div className="contrato-btn-row" style={contratoBtnRow}>
                         {temArquivoAssinado ? (
                           <>
-                            <a href={c.pdf_contrato_assinado_url!} target="_blank" rel="noopener noreferrer" style={btnAction}>
+                            <a
+                              href={c.pdf_contrato_assinado_url!}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="ct-btn"
+                            >
                               Ver arquivo salvo
                             </a>
                             <button
                               type="button"
-                              style={btnDanger}
+                              className="ct-btn ct-btn--danger"
                               onClick={() => {
                                 setContratoParaExcluirArquivo(c.id);
                                 setCodigoExcluirArquivo("");
@@ -532,11 +599,7 @@ export default function ContratosPage() {
                             type="button"
                             disabled={uploadingId === c.id}
                             onClick={() => document.getElementById(inputUploadId)?.click()}
-                            style={{
-                              ...btnAction,
-                              opacity: uploadingId === c.id ? 0.65 : 1,
-                              cursor: uploadingId === c.id ? "wait" : "pointer",
-                            }}
+                            className="ct-btn"
                           >
                             {uploadingId === c.id ? "Salvando..." : "Enviar contrato assinado"}
                           </button>
@@ -559,7 +622,7 @@ export default function ContratosPage() {
                         Ações
                       </span>
                       <div className="contrato-btn-row" style={contratoBtnRow}>
-                        <Link href={`/dashboard/contratos/${c.id}`} style={btnAction}>
+                        <Link href={`/dashboard/contratos/${c.id}`} className="ct-btn">
                           Ver PDF
                         </Link>
                         {(c.status === "gerado" || c.status === "enviado") && (
@@ -567,11 +630,7 @@ export default function ContratosPage() {
                             type="button"
                             disabled={gerandoId === c.id}
                             onClick={() => handleGerar(c.id)}
-                            style={{
-                              ...btnAction,
-                              opacity: gerandoId === c.id ? 0.65 : 1,
-                              cursor: gerandoId === c.id ? "wait" : "pointer",
-                            }}
+                            className="ct-btn"
                           >
                             {gerandoId === c.id ? "Gerando..." : "Gerar PDF e link"}
                           </button>
@@ -583,7 +642,7 @@ export default function ContratosPage() {
                               onClick={() =>
                                 copyLink(`${typeof window !== "undefined" ? window.location.origin : ""}/assinar/${c.id}`)
                               }
-                              style={btnAction}
+                              className="ct-btn"
                             >
                               Copiar link
                             </button>
@@ -594,14 +653,14 @@ export default function ContratosPage() {
                                   `${typeof window !== "undefined" ? window.location.origin : ""}/assinar/${c.id}`
                                 )
                               }
-                              style={btnAction}
+                              className="ct-btn"
                             >
                               Enviar WhatsApp
                             </button>
                           </>
                         )}
                         {c.pdf_url && (
-                          <a href={c.pdf_url} target="_blank" rel="noopener noreferrer" style={btnAction}>
+                          <a href={c.pdf_url} target="_blank" rel="noopener noreferrer" className="ct-btn">
                             Baixar PDF
                           </a>
                         )}
@@ -652,7 +711,7 @@ export default function ContratosPage() {
                               setContratoParaAssinar(c.id);
                               setModalAssinaturaOpen(true);
                             }}
-                            style={btnAction}
+                            className="ct-btn"
                           >
                             Alterar
                           </button>
@@ -665,11 +724,7 @@ export default function ContratosPage() {
                             setContratoParaAssinar(c.id);
                             setModalAssinaturaOpen(true);
                           }}
-                          style={{
-                            ...btnAction,
-                            opacity: !c.link_assinatura ? 0.5 : 1,
-                            cursor: !c.link_assinatura ? "not-allowed" : "pointer",
-                          }}
+                          className="ct-btn"
                         >
                           {c.link_assinatura ? "Assinar" : "Aguardando geração"}
                         </button>
@@ -682,7 +737,7 @@ export default function ContratosPage() {
                         setCodigoExcluir("");
                         setModalExcluirOpen(true);
                       }}
-                      style={btnDanger}
+                      className="ct-btn ct-btn--danger"
                     >
                       Excluir
                     </button>
@@ -760,13 +815,14 @@ export default function ContratosPage() {
                   setContratoParaExcluir(null);
                   setCodigoExcluir("");
                 }}
-                style={btnSecondary}
+                className="ct-btn"
               >
                 Cancelar
               </button>
               <button
                 type="button"
                 disabled={excluindo || !codigoExcluir.trim()}
+                className="ct-btn ct-btn--danger-solid"
                 onClick={async () => {
                   setExcluindo(true);
                   try {
@@ -791,7 +847,6 @@ export default function ContratosPage() {
                     setExcluindo(false);
                   }
                 }}
-                style={{ ...btnPrimary, backgroundColor: "#b91c1c", boxShadow: "0 8px 20px rgba(185,28,28,0.25)" }}
               >
                 {excluindo ? "Excluindo..." : "Confirmar exclusão"}
               </button>
@@ -854,13 +909,14 @@ export default function ContratosPage() {
                   setContratoParaExcluirArquivo(null);
                   setCodigoExcluirArquivo("");
                 }}
-                style={btnSecondary}
+                className="ct-btn"
               >
                 Cancelar
               </button>
               <button
                 type="button"
                 disabled={excluindoArquivo || !codigoExcluirArquivo.trim()}
+                className="ct-btn ct-btn--danger-solid"
                 onClick={async () => {
                   setExcluindoArquivo(true);
                   try {
@@ -888,7 +944,6 @@ export default function ContratosPage() {
                     setExcluindoArquivo(false);
                   }
                 }}
-                style={{ ...btnPrimary, backgroundColor: "#b91c1c", boxShadow: "0 8px 20px rgba(185,28,28,0.25)" }}
               >
                 {excluindoArquivo ? "Excluindo..." : "Confirmar"}
               </button>
