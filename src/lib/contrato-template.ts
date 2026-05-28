@@ -180,9 +180,22 @@ function getContratoPresencial(params: ContratoParams): ContratoEstruturado {
 }
 
 /** Considera consultoria online se o nome do plano indicar consultoria online. */
-function isConsultoriaOnline(nomePlano: string): boolean {
+export function isConsultoriaOnline(nomePlano: string): boolean {
   const n = nomePlano.toLowerCase().replace(/\s+/g, "_");
   return n.includes("consultoria") && n.includes("online");
+}
+
+/** Detecta modelo de consultoria online pelo título gerado. */
+export function isContratoConsultoriaOnlineByTitulo(titulo: string): boolean {
+  return titulo.toUpperCase().includes("CONSULTORIA ONLINE");
+}
+
+/** Cabeçalho de cláusula conforme o tipo de contrato. */
+export function rotuloClausula(numero: string, titulo: string, tituloContrato: string): string {
+  if (isContratoConsultoriaOnlineByTitulo(tituloContrato)) {
+    return `${numero}. ${titulo}`;
+  }
+  return `Cláusula ${numero} – ${titulo}`;
 }
 
 export function getContratoEstruturado(params: ContratoParams): ContratoEstruturado {

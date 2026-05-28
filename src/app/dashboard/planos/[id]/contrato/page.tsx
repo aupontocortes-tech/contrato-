@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { DocumentoContrato } from "@/components/DocumentoContrato";
+import { ContratoCorpoVisual } from "@/components/ContratoCorpoVisual";
 import { ArrowLeft, FileText } from "lucide-react";
 
 type ContratoEstruturado = {
@@ -85,90 +86,11 @@ export default function PreviewContratoPlanoPage() {
       </div>
 
       <DocumentoContrato>
-          <h1 className="text-xl md:text-2xl font-bold text-center leading-tight uppercase tracking-tight text-neutral-900">
-            {conteudo.titulo === "CONTRATO DE CONSULTORIA ONLINE" ? (
-              <>
-                {conteudo.titulo}
-                <br />
-                <span className="text-lg md:text-xl font-normal normal-case">Prestação de Serviços de Personal Trainer</span>
-              </>
-            ) : (
-              <>
-                {conteudo.titulo.replace(/\s+DE\s+PERSONAL\s+TRAINER$/i, "").trim()}
-                <br />
-                <span className="text-lg md:text-xl">DE PERSONAL TRAINER</span>
-              </>
-            )}
-          </h1>
-          <p className="text-center mt-6 mb-8" aria-hidden> </p>
-
-          <section className="mb-8 text-left">
-            <h2 className="text-sm font-bold uppercase tracking-wide mb-4 text-left text-neutral-800">
-              Identificação das partes
-            </h2>
-            <p className="text-sm leading-relaxed mb-4 text-neutral-700">
-              {conteudo.identificacaoTexto}
-            </p>
-            <p className="text-sm text-neutral-800">
-              <strong className="font-semibold">Nome completo:</strong> {conteudo.nomeContratante}
-            </p>
-            <p className="text-sm text-neutral-800">
-              <strong className="font-semibold">CPF:</strong> {conteudo.cpfContratante}
-            </p>
-            {(conteudo.titulo === "CONTRATO DE CONSULTORIA ONLINE" || conteudo.telefone != null || conteudo.email != null) && (
-              <>
-                {(conteudo.titulo === "CONTRATO DE CONSULTORIA ONLINE" || conteudo.telefone != null) && (
-                  <p className="text-sm text-neutral-800">
-                    <strong className="font-semibold">Telefone:</strong> {conteudo.telefone || "__________________________"}
-                  </p>
-                )}
-                {(conteudo.titulo === "CONTRATO DE CONSULTORIA ONLINE" || conteudo.email != null) && (
-                  <p className="text-sm text-neutral-800">
-                    <strong className="font-semibold">E-mail:</strong> {conteudo.email || "_____________________________"}
-                  </p>
-                )}
-              </>
-            )}
-            <p className="text-xs text-neutral-500 mt-2">
-              (Em um contrato real, os dados do aluno aparecem aqui.)
-            </p>
-          </section>
-
-          <div className="space-y-6 text-left">
-            {conteudo.clausulas.map((cl) => (
-              <section key={cl.numero}>
-                <h3 className="text-sm font-bold uppercase tracking-wide mb-2 text-neutral-800">
-                  Cláusula {cl.numero} – {cl.titulo}
-                </h3>
-                <p className="text-sm leading-relaxed text-neutral-700">{cl.texto}</p>
-              </section>
-            ))}
-          </div>
-
-          {conteudo.blocoAssinaturaDigital != null && conteudo.blocoAssinaturaDigital !== "" && (
-            <div className="mt-10 pt-6 space-y-3 whitespace-pre-line text-sm text-neutral-700">
-              {conteudo.blocoAssinaturaDigital.split("\n").map((line, i) => (
-                <p key={i}>{line}</p>
-              ))}
-              <p className="pt-2">Assinatura do(a) CONTRATANTE: ________________________________</p>
-              <p>Assinatura da CONTRATADA: _________________________________</p>
-            </div>
-          )}
-
-          <div className="mt-12 pt-8 grid grid-cols-2 gap-8">
-            <div className="text-center">
-              <div className="border-b border-neutral-400 pb-1 mb-2 min-h-[2rem]" />
-              <p className="text-sm font-medium">{conteudo.assinaturaContratada}</p>
-              <p className="text-xs text-neutral-500 uppercase">Contratada</p>
-              <p className="text-xs text-neutral-500 mt-1">Data: ____/____/________</p>
-            </div>
-            <div className="text-center">
-              <div className="border-b border-neutral-400 pb-1 mb-2 min-h-[2rem]" />
-              <p className="text-sm font-medium">{conteudo.assinaturaContratante}</p>
-              <p className="text-xs text-neutral-500 uppercase">Contratante</p>
-              <p className="text-xs text-neutral-500 mt-1">Data: ____/____/________</p>
-            </div>
-          </div>
+        <ContratoCorpoVisual
+          conteudo={conteudo}
+          nomePlano={plano.nome_plano}
+          notaIdentificacao="(Em um contrato real, os dados do aluno aparecem aqui.)"
+        />
       </DocumentoContrato>
 
       <div className="flex flex-wrap gap-2 print:hidden">

@@ -2,6 +2,7 @@ import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import path from "path";
 import fs from "fs/promises";
 import type { ContratoEstruturado } from "./contrato-template";
+import { rotuloClausula } from "./contrato-template";
 
 const LOGO_PATH = path.join(process.cwd(), "public", "logo.png");
 const WATERMARK_PATH = path.join(process.cwd(), "public", "logo-watermark.png");
@@ -134,7 +135,7 @@ export async function gerarPdfFromContrato(contrato: ContratoEstruturado): Promi
       page = doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
       y = PAGE_HEIGHT - MARGIN;
     }
-    const header = `CLÁUSULA ${cl.numero} – ${cl.titulo}`;
+    const header = rotuloClausula(cl.numero, cl.titulo, contrato.titulo);
     page.drawText(header, {
       x: MARGIN,
       y,
@@ -312,7 +313,7 @@ export async function gerarPdfAssinado(
       page = doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
       y = PAGE_HEIGHT - MARGIN;
     }
-    const header = `CLÁUSULA ${cl.numero} – ${cl.titulo}`;
+    const header = rotuloClausula(cl.numero, cl.titulo, contrato.titulo);
     page.drawText(header, {
       x: MARGIN,
       y,

@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DocumentoContrato } from "@/components/DocumentoContrato";
+import { ContratoCorpoVisual } from "@/components/ContratoCorpoVisual";
 import { toast } from "sonner";
 import { PenLine, Eraser, RotateCw, Download, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -543,60 +544,18 @@ export default function AssinarPage() {
       <section className="flex-1 p-4 pb-6 overflow-auto">
         <div className="max-w-2xl mx-auto">
           <DocumentoContrato compact>
-              <h1 className="text-lg md:text-xl font-bold text-center leading-tight uppercase tracking-tight text-neutral-900">
-                {conteudo.titulo.includes("\n") ? (
-                  conteudo.titulo.split("\n").map((line, i) => (
-                    <span key={i}>
-                      {line}
-                      {i < conteudo.titulo.split("\n").length - 1 && <br />}
-                    </span>
-                  ))
-                ) : (
-                  <>
-                    {conteudo.titulo.replace(/\s+DE\s+PERSONAL\s+TRAINER$/i, "").trim()}
-                    <br />
-                    <span className="text-base md:text-lg">DE PERSONAL TRAINER</span>
-                  </>
-                )}
-              </h1>
-              <p className="text-center mt-4 mb-6" aria-hidden> </p>
-              <section className="mb-6 text-left">
-                <h2 className="text-sm font-bold uppercase tracking-wide mb-3 text-left text-neutral-800">
-                  Identificação das partes
-                </h2>
-                <p className="text-sm leading-relaxed mb-3 text-neutral-700">
-                  {conteudo.identificacaoTexto}
+            <ContratoCorpoVisual
+              conteudo={conteudo}
+              nomePlano={contrato.plano.nome_plano}
+              compact
+              hideAssinaturasGrid
+              tituloClassName="text-lg md:text-xl font-bold text-center leading-tight uppercase tracking-tight text-neutral-900"
+              childrenAfterClausulas={
+                <p className="text-sm text-muted-foreground mt-6 text-center">
+                  Role até o final da página para assinar de próprio punho.
                 </p>
-                <p className="text-sm text-neutral-800">
-                  <strong className="font-semibold">Nome completo:</strong> {conteudo.nomeContratante}
-                </p>
-                <p className="text-sm text-neutral-800">
-                  <strong className="font-semibold">CPF:</strong> {conteudo.cpfContratante}
-                </p>
-                {conteudo.telefone && (
-                  <p className="text-sm text-neutral-800">
-                    <strong className="font-semibold">Telefone:</strong> {conteudo.telefone}
-                  </p>
-                )}
-                {conteudo.email && (
-                  <p className="text-sm text-neutral-800">
-                    <strong className="font-semibold">E-mail:</strong> {conteudo.email}
-                  </p>
-                )}
-              </section>
-              <div className="space-y-4 text-left">
-                {conteudo.clausulas.map((cl) => (
-                  <section key={cl.numero}>
-                    <h3 className="text-sm font-bold uppercase tracking-wide mb-1 text-neutral-800">
-                      Cláusula {cl.numero} – {cl.titulo}
-                    </h3>
-                    <p className="text-sm leading-relaxed text-neutral-700">{cl.texto}</p>
-                  </section>
-                ))}
-              </div>
-              <p className="text-sm text-muted-foreground mt-6 text-center">
-                Role até o final da página para assinar de próprio punho.
-              </p>
+              }
+            />
           </DocumentoContrato>
         </div>
       </section>
