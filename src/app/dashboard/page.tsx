@@ -1,9 +1,14 @@
 "use client";
 
-import { useState, useEffect, type CSSProperties, type ReactNode } from "react";
+import { useState, useEffect, useMemo, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Users, FileText, Clock, CheckCircle2, ChevronRight } from "lucide-react";
+import { Users, FileText, Clock, CheckCircle2, ChevronRight, X } from "lucide-react";
+import {
+  isContratoAtivo,
+  isContratoPendente,
+} from "@/lib/contrato-status";
+import { labelPlano } from "@/lib/planos";
 
 const THEME_KEY = "contraton-theme";
 
@@ -13,6 +18,17 @@ type Stats = {
   contratosAtivos: number;
   contratosPendentes: number;
 };
+
+type ContratoResumo = {
+  id: number;
+  status: string;
+  data_fim: string;
+  pdf_contrato_assinado_url: string | null;
+  aluno: { nome_completo: string };
+  plano: { nome_plano: string; duracao_dias: number };
+};
+
+type ListaPainel = "ativos" | "pendentes" | null;
 
 const cardStyle: CSSProperties = {
   border: "1px solid #e2e8f0",
@@ -54,23 +70,41 @@ export default function DashboardPage() {
     contratosPendentes: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [contratos, setContratos] = useState<ContratoResumo[]>([]);
+  const [listaAberta, setListaAberta] = useState<ListaPainel>(null);
 
   useEffect(() => {
-    fetch("/api/dashboard/resumo")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data && typeof data.totalAlunos === "number") {
+    Promise.all([
+      fetch("/api/dashboard/resumo").then((r) => r.json()),
+      fetch("/api/contratos").then((r) => r.json()),
+    ])
+      .then(([resumo, lista]) => {
+        if (resumo && typeof resumo.totalAlunos === "number") {
           setStats({
-            totalAlunos: data.totalAlunos,
-            contratosAssinados: data.contratosAssinados ?? 0,
-            contratosAtivos: data.contratosAtivos ?? 0,
-            contratosPendentes: data.contratosPendentes ?? 0,
+            totalAlunos: resumo.totalAlunos,
+            contratosAssinados: resumo.contratosAssinados ?? 0,
+            contratosAtivos: resumo.contratosAtivos ?? 0,
+            contratosPendentes: resumo.contratosPendentes ?? 0,
           });
         }
+        if (Array.isArray(lista)) setContratos(lista);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  const contratosAtivosLista = useMemo(
+    () => contratos.filter(isContratoAtivo),
+    [contratos]
+  );
+  const contratosPendentesLista = useMemo(
+    () => contratos.filter(isContratoPendente),
+    [contratos]
+  );
+
+  function toggleLista(tipo: ListaPainel) {
+    setListaAberta((atual) => (atual === tipo ? null : tipo));
+  }
 
   return (
     <div className="dash-page" style={{ padding: "8px 4px 20px" }}>
@@ -103,6 +137,22 @@ export default function DashboardPage() {
           .dash-stat-value {
             font-size: 28px !important;
           }
+        }
+        .dash-stat-clickable {
+          cursor: pointer;
+          transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+          text-align: left;
+          width: 100%;
+          font: inherit;
+        }
+        .dash-stat-clickable:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 18px rgba(15, 23, 42, 0.1);
+          border-color: #c7d2fe !important;
+        }
+        .dash-stat-clickable.dash-stat-active {
+          border-color: #6366f1 !important;
+          box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
         }
       `}</style>
       <h1
@@ -142,31 +192,62 @@ export default function DashboardPage() {
 
       <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
         <div className="dash-stats-grid">
-          <StatCard
-            label="Total de alunos"
-            value={loading ? "…" : stats.totalAlunos}
-            icon={<Users style={{ width: 18, height: 18, color: "#4f46e5" }} />}
-            iconBg="#eef2ff"
-          />
-          <StatCard
-            label="Contratos assinados"
-            value={loading ? "…" : stats.contratosAssinados}
-            icon={<CheckCircle2 style={{ width: 18, height: 18, color: "#16a34a" }} />}
-            iconBg="#ecfdf5"
-          />
+          <Link href="/dashboard/alunos" style={{ textDecoration: "none", color: "inherit" }}>
+            <StatCard
+              label="Total de alunos"
+              value={loading ? "…" : stats.totalAlunos}
+              icon={<Users style={{ width: 18, height: 18, color: "#4f46e5" }} />}
+              iconBg="#eef2ff"
+              clickable
+            />
+          </Link>
+          <Link href="/dashboard/contratos-assinados" style={{ textDecoration: "none", color: "inherit" }}>
+            <StatCard
+              label="Contratos assinados"
+              value={loading ? "…" : stats.contratosAssinados}
+              icon={<CheckCircle2 style={{ width: 18, height: 18, color: "#16a34a" }} />}
+              iconBg="#ecfdf5"
+              clickable
+            />
+          </Link>
           <StatCard
             label="Contratos ativos"
             value={loading ? "…" : stats.contratosAtivos}
             icon={<FileText style={{ width: 18, height: 18, color: "#0891b2" }} />}
             iconBg="#ecfeff"
+            clickable
+            active={listaAberta === "ativos"}
+            onClick={() => toggleLista("ativos")}
           />
           <StatCard
             label="Pendentes"
             value={loading ? "…" : stats.contratosPendentes}
             icon={<Clock style={{ width: 18, height: 18, color: "#ea580c" }} />}
             iconBg="#fff7ed"
+            clickable
+            active={listaAberta === "pendentes"}
+            onClick={() => toggleLista("pendentes")}
           />
         </div>
+
+        {listaAberta === "ativos" && (
+          <ListaContratosPainel
+            titulo="Contratos ativos"
+            contratos={contratosAtivosLista}
+            loading={loading}
+            onFechar={() => setListaAberta(null)}
+            vazio="Nenhum contrato ativo no momento."
+          />
+        )}
+        {listaAberta === "pendentes" && (
+          <ListaContratosPainel
+            titulo="Contratos pendentes"
+            contratos={contratosPendentesLista}
+            loading={loading}
+            onFechar={() => setListaAberta(null)}
+            vazio="Nenhum contrato pendente."
+          />
+        )}
 
         <section
           style={{
@@ -336,19 +417,131 @@ export default function DashboardPage() {
   );
 }
 
+function ListaContratosPainel({
+  titulo,
+  contratos,
+  loading,
+  onFechar,
+  vazio,
+}: {
+  titulo: string;
+  contratos: ContratoResumo[];
+  loading: boolean;
+  onFechar: () => void;
+  vazio: string;
+}) {
+  return (
+    <section
+      style={{
+        border: "1px solid #e2e8f0",
+        borderRadius: "14px",
+        backgroundColor: "#fff",
+        padding: "14px",
+        boxShadow: "0 4px 16px rgba(15,23,42,0.06)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: "12px",
+        }}
+      >
+        <h2 style={{ margin: 0, fontSize: "15px", fontWeight: 700, color: "#0f172a" }}>
+          {titulo}
+        </h2>
+        <button
+          type="button"
+          onClick={onFechar}
+          aria-label="Fechar lista"
+          style={{
+            border: "none",
+            background: "#f1f5f9",
+            borderRadius: "8px",
+            padding: "6px",
+            cursor: "pointer",
+            color: "#64748b",
+          }}
+        >
+          <X size={16} />
+        </button>
+      </div>
+      {loading ? (
+        <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>Carregando...</p>
+      ) : contratos.length === 0 ? (
+        <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>{vazio}</p>
+      ) : (
+        <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "8px" }}>
+          {contratos.map((c) => (
+            <li key={c.id}>
+              <Link
+                href={`/dashboard/contratos/${c.id}`}
+                style={{
+                  display: "block",
+                  padding: "10px 12px",
+                  borderRadius: "10px",
+                  border: "1px solid #e2e8f0",
+                  backgroundColor: "#f8fafc",
+                  textDecoration: "none",
+                  color: "inherit",
+                }}
+              >
+                <p style={{ margin: "0 0 2px", fontSize: "14px", fontWeight: 600, color: "#0f172a" }}>
+                  {c.aluno.nome_completo}
+                </p>
+                <p style={{ margin: 0, fontSize: "12px", color: "#64748b" }}>
+                  {labelPlano(c.plano.nome_plano, c.plano.duracao_dias)}
+                </p>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+      <Link
+        href="/dashboard/contratos"
+        style={{
+          display: "inline-block",
+          marginTop: "12px",
+          fontSize: "13px",
+          fontWeight: 600,
+          color: "#4f46e5",
+          textDecoration: "none",
+        }}
+      >
+        Ver todos os contratos →
+      </Link>
+    </section>
+  );
+}
+
 function StatCard({
   label,
   value,
   icon,
   iconBg,
+  clickable,
+  active,
+  onClick,
 }: {
   label: string;
   value: string | number;
   icon: ReactNode;
   iconBg: string;
+  clickable?: boolean;
+  active?: boolean;
+  onClick?: () => void;
 }) {
-  return (
-    <div className="dash-stat-card" style={cardStyle}>
+  const className = [
+    "dash-stat-card",
+    clickable ? "dash-stat-clickable" : "",
+    active ? "dash-stat-active" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const inner = (
+    <>
       <div
         style={{
           display: "flex",
@@ -393,6 +586,20 @@ function StatCard({
       >
         {value}
       </p>
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <button type="button" className={className} style={{ ...cardStyle, border: "1px solid #e2e8f0" }} onClick={onClick}>
+        {inner}
+      </button>
+    );
+  }
+
+  return (
+    <div className={className} style={cardStyle}>
+      {inner}
     </div>
   );
 }

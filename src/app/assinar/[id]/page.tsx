@@ -10,6 +10,11 @@ import { toast } from "sonner";
 import { PenLine, Eraser, RotateCw, Download, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  getPointerFromEvent,
+  restoreCanvasImage,
+  setCanvasDimensions,
+} from "@/lib/signature-pad";
 
 type ContratoEstruturado = {
   titulo: string;
@@ -74,26 +79,6 @@ export default function AssinarPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  const getCoords = useCallback((e: React.TouchEvent<HTMLCanvasElement> | React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return { x: 0, y: 0 };
-    const rect = canvas.getBoundingClientRect();
-    if (rect.width === 0) return { x: 0, y: 0 };
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    
-    if ("touches" in e && e.touches.length > 0) {
-      return {
-        x: (e.touches[0].clientX - rect.left) * scaleX,
-        y: (e.touches[0].clientY - rect.top) * scaleY,
-      };
-    }
-    return {
-      x: ((e as React.MouseEvent<HTMLCanvasElement>).clientX - rect.left) * scaleX,
-      y: ((e as React.MouseEvent<HTMLCanvasElement>).clientY - rect.top) * scaleY,
-    };
-  }, []);
-
   const startDrawing = useCallback((e: React.TouchEvent<HTMLCanvasElement> | React.MouseEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     if (!canvasRef.current) return;
@@ -101,27 +86,27 @@ export default function AssinarPage() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     
-    const { x, y } = getCoords(e);
+    const { x, y } = getPointerFromEvent(canvas, e);
     ctx.beginPath();
     ctx.moveTo(x, y);
     setIsDrawing(true);
     desenhandoRef.current = true;
-  }, [getCoords]);
+  }, []);
 
   const draw = useCallback((e: React.TouchEvent<HTMLCanvasElement> | React.MouseEvent<HTMLCanvasElement>) => {
     e.preventDefault();
-    if (!desenhandoRef.current || !isDrawing || !canvasRef.current) return;
+    if (!desenhandoRef.current || !canvasRef.current) return;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const { x, y } = getCoords(e);
+    const { x, y } = getPointerFromEvent(canvas, e);
     ctx.lineTo(x, y);
     ctx.stroke();
     setDesenhou(true);
     // Salvar estado do canvas após desenhar
     canvasImageRef.current = canvas.toDataURL("image/png");
-  }, [isDrawing, getCoords]);
+  }, []);
 
   const stopDrawing = useCallback(() => {
     setIsDrawing(false);
@@ -263,111 +248,35 @@ export default function AssinarPage() {
   useEffect(() => {
     if (!contrato || modo !== "manual" || !canvasRef.current) return;
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      ctx.strokeStyle = "#000";
-      ctx.lineWidth = 3;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-    }
     
-    // Ajustar tamanho do canvas baseado no container e orientação
     const resizeCanvas = () => {
       if (!canvas || !canvas.parentElement) return;
+      const saved = canvasImageRef.current;
       
-      // Em landscape, usar quase toda a tela
       if (isLandscape) {
         const viewportWidth = window.innerWidth;
         const viewportHeight = window.innerHeight;
-        
-        // Deixar espaço para header (~52px) e botões (~120px)
         const headerHeight = 52;
         const buttonsHeight = 120;
         const availableHeight = viewportHeight - headerHeight - buttonsHeight;
-        const availableWidth = viewportWidth - 16; // padding mínimo (8px cada lado)
-        
-        // Usar toda a área disponível proporcionalmente
-        const canvasWidth = availableWidth;
-        const canvasHeight = availableHeight;
-        
-        // Atualizar dimensões reais do canvas (alta resolução)
-        canvas.width = canvasWidth;
-        canvas.height = canvasHeight;
-        
-        // Estilo para ocupar todo espaço disponível
-        canvas.style.width = `${availableWidth}px`;
-        canvas.style.height = `${availableHeight}px`;
-        canvas.style.display = 'block';
-        canvas.style.margin = '0';
-        canvas.style.padding = '0';
-        
-        // Reconfigurar contexto após redimensionar
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-          ctx.strokeStyle = "#000";
-          ctx.lineWidth = 3;
-          ctx.lineCap = "round";
-          ctx.lineJoin = "round";
-        }
-        
-        // Restaurar imagem se existir
-        if (canvasImageRef.current && ctx) {
-          const img = new Image();
-          img.onload = () => {
-            const currentCtx = canvas.getContext("2d");
-            if (currentCtx) {
-              currentCtx.clearRect(0, 0, canvas.width, canvas.height);
-              currentCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
-              setDesenhou(true);
-            }
-          };
-          img.src = canvasImageRef.current;
-        }
+        const availableWidth = viewportWidth - 16;
+        setCanvasDimensions(canvas, availableWidth, availableHeight, 3);
+        canvas.style.display = "block";
+        canvas.style.margin = "0";
       } else {
-        // Modo portrait - responsivo para desktop e mobile
         const container = canvas.parentElement;
         if (!container) return;
-        
-        const containerWidth = container.clientWidth - 32; // padding
+        const containerWidth = container.clientWidth - 32;
         const isMobile = window.innerWidth < 640;
-        
-        // Em mobile: altura fixa menor, em desktop: altura maior
         const canvasHeight = isMobile ? 250 : 300;
         const canvasWidth = Math.min(containerWidth, isMobile ? containerWidth : 600);
-        
-        // Atualizar dimensões reais do canvas
-        canvas.width = canvasWidth;
-        canvas.height = canvasHeight;
-        
-        // Estilo para ocupar espaço proporcionalmente
-        canvas.style.width = `${canvasWidth}px`;
-        canvas.style.height = `${canvasHeight}px`;
-        canvas.style.display = 'block';
-        canvas.style.margin = '0 auto';
-        canvas.style.padding = '0';
-        
-        // Reconfigurar contexto
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-          ctx.strokeStyle = "#000";
-          ctx.lineWidth = isMobile ? 3 : 2;
-          ctx.lineCap = "round";
-          ctx.lineJoin = "round";
-        }
-        
-        // Restaurar imagem se existir
-        if (canvasImageRef.current && ctx) {
-          const img = new Image();
-          img.onload = () => {
-            const currentCtx = canvas.getContext("2d");
-            if (currentCtx) {
-              currentCtx.clearRect(0, 0, canvas.width, canvas.height);
-              currentCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
-              setDesenhou(true);
-            }
-          };
-          img.src = canvasImageRef.current;
-        }
+        setCanvasDimensions(canvas, canvasWidth, canvasHeight, isMobile ? 3 : 2);
+        canvas.style.display = "block";
+        canvas.style.margin = "0 auto";
+      }
+      
+      if (saved) {
+        restoreCanvasImage(canvas, saved, () => setDesenhou(true));
       }
     };
     
@@ -707,15 +616,14 @@ export default function AssinarPage() {
                 <canvas
                   ref={canvasRef}
                   className={isLandscape
-                    ? "w-full h-full cursor-crosshair touch-none"
-                    : "w-full border border-gray-200 rounded cursor-crosshair touch-none"
+                    ? "cursor-crosshair touch-none"
+                    : "border border-gray-200 rounded cursor-crosshair touch-none mx-auto"
                   }
-                  style={{ 
+                  style={{
                     touchAction: "none",
-                    width: '100%',
-                    height: isLandscape ? '100%' : 'auto',
-                    display: 'block',
-                    maxHeight: isLandscape ? 'none' : '400px'
+                    display: "block",
+                    maxWidth: "100%",
+                    maxHeight: isLandscape ? "none" : "400px",
                   }}
                   onMouseDown={startDrawing}
                   onMouseMove={draw}
