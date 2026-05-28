@@ -16,18 +16,69 @@ const CLAUSULAS_PRESENCIAL = [
   { numero: "11ª", titulo: "USO DE IMAGEM", texto: "O CONTRATANTE autoriza a utilização de sua imagem, eventualmente registrada durante o acompanhamento da consultoria, para fins exclusivamente profissionais e de divulgação dos serviços da CONTRATADA, de forma gratuita e respeitosa." },
 ];
 
-/** Cláusulas do contrato de Consultoria Online (conteúdo exato do PDF enviado). */
-const CLAUSULAS_CONSULTORIA_ONLINE = [
-  { numero: "1ª", titulo: "DO OBJETO", texto: "Prestação de serviços de consultoria online em treinamento físico, incluindo prescrição, ajustes, acompanhamento remoto e suporte, sem a realização de aulas presenciais e sem garantia de resultados." },
-  { numero: "2ª", titulo: "DAS OBRIGAÇÕES DA CONTRATADA", texto: "Elaborar treinos personalizados, realizar ajustes conforme evolução do aluno e oferecer suporte online dentro dos canais e horários definidos." },
-  { numero: "3ª", titulo: "DAS OBRIGAÇÕES DO CONTRATANTE", texto: "Executar os treinos conforme orientação, informar condições de saúde e assumir total responsabilidade pela execução das atividades." },
-  { numero: "4ª", titulo: "RESPONSABILIDADE MÉDICA", texto: "A consultoria online não substitui acompanhamento médico. O CONTRATANTE declara-se apto à prática de atividade física." },
-  { numero: "5ª", titulo: "PAGAMENTO", texto: "Pagamento antecipado conforme plano contratado. A inadimplência suspende o serviço, sem reembolso." },
-  { numero: "6ª", titulo: "SUPORTE E LIMITES", texto: "O suporte será prestado de forma online, não incluindo acompanhamento presencial, correção em tempo real ou responsabilidade por execução inadequada dos exercícios." },
-  { numero: "7ª", titulo: "CANCELAMENTO", texto: "Cancelamento mediante aviso prévio por escrito de 30 dias." },
-  { numero: "8ª", titulo: "USO DE IMAGEM", texto: "O CONTRATANTE autoriza a utilização de sua imagem, eventualmente registrada durante o acompanhamento da consultoria, para fins exclusivamente profissionais e de divulgação dos serviços da CONTRATADA, de forma gratuita e respeitosa." },
-  { numero: "9ª", titulo: "VIGÊNCIA", texto: "Contrato com vigência por prazo indeterminado, válido até solicitação formal de cancelamento." },
-];
+/** Texto da duração do plano (modelo consultoria online personalizada). */
+function textoDuracaoPlano(duracaoDias: number): string {
+  if (duracaoDias >= 365) {
+    return "12 (doze) meses, contados a partir da data de início do acompanhamento.";
+  }
+  if (duracaoDias >= 180) {
+    return "6 (seis) meses, contados a partir da data de início do acompanhamento.";
+  }
+  if (duracaoDias >= 90) {
+    return "03 (três) meses, contados a partir da data de início do acompanhamento.";
+  }
+  if (duracaoDias >= 30) {
+    return "01 (um) mês, contado a partir da data de início do acompanhamento.";
+  }
+  return `${duracaoDias} dias, contados a partir da data de início do acompanhamento.`;
+}
+
+/** Cláusulas do contrato de Consultoria Online Personalizada (texto do modelo; sem dados de terceiros). */
+function clausulasConsultoriaOnline(duracaoDias: number) {
+  return [
+    {
+      numero: "1",
+      titulo: "OBJETO DO CONTRATO",
+      texto:
+        "O presente contrato tem como objetivo a prestação de serviços de consultoria online personalizada, incluindo acompanhamento físico, orientação de treinos, avaliações e suporte online.",
+    },
+    {
+      numero: "2",
+      titulo: "DURAÇÃO DO PLANO",
+      texto: `O plano contratado terá duração de ${textoDuracaoPlano(duracaoDias)}`,
+    },
+    {
+      numero: "3",
+      titulo: "SERVIÇOS INCLUSOS",
+      texto:
+        "Treino personalizado de acordo com os objetivos do CONTRATANTE; ajustes e atualizações periódicas do treino; acompanhamento online; suporte via aplicativo e/ou WhatsApp em horário comercial; avaliações físicas online; orientações gerais relacionadas ao treino; monitoramento da evolução física.",
+    },
+    {
+      numero: "4",
+      titulo: "RESPONSABILIDADES DA CONTRATANTE",
+      texto:
+        "A CONTRATANTE se compromete a: seguir corretamente as orientações passadas; informar qualquer limitação física, lesão ou problema de saúde; enviar fotos, medidas e avaliações quando solicitado; manter compromisso e constância com o acompanhamento.",
+    },
+    {
+      numero: "5",
+      titulo: "PAGAMENTO",
+      texto:
+        "O valor do plano será acordado entre as partes no momento da contratação. O não pagamento poderá acarretar suspensão do acompanhamento até regularização.",
+    },
+    {
+      numero: "6",
+      titulo: "CANCELAMENTO",
+      texto:
+        "Em caso de desistência por parte da CONTRATANTE antes do término do plano, não haverá reembolso dos valores já pagos, salvo acordo entre ambas as partes.",
+    },
+    {
+      numero: "7",
+      titulo: "CONSIDERAÇÕES FINAIS",
+      texto:
+        "A CONTRATADA não garante resultados específicos, uma vez que os resultados dependem diretamente da disciplina, alimentação, rotina e comprometimento da CONTRATANTE.",
+    },
+  ];
+}
 
 function getVigenciaByPlano(nomePlano: string): string {
   const p = nomePlano.toLowerCase().replace(/\s+/g, "_");
@@ -84,7 +135,7 @@ export type ContratoEstruturado = {
 
 function getContratoConsultoriaOnline(params: ContratoParams): ContratoEstruturado {
   return {
-    titulo: "CONTRATO DE CONSULTORIA ONLINE\nPrestação de Serviços de Personal Trainer",
+    titulo: "CONTRATO DE CONSULTORIA ONLINE PERSONALIZADA",
     logoPlaceholder: "SUA LOGO AQUI",
     contratadaNome: CONTRATADA_NOME,
     contratadaTitulo: CONTRATADA_TITULO,
@@ -93,11 +144,12 @@ function getContratoConsultoriaOnline(params: ContratoParams): ContratoEstrutura
     cpfContratante: params.cpf,
     telefone: params.telefone ?? null,
     email: params.email,
-    clausulas: [...CLAUSULAS_CONSULTORIA_ONLINE],
-    vigenciaClausula12: "Contrato com vigência por prazo indeterminado, válido até solicitação formal de cancelamento.",
+    clausulas: clausulasConsultoriaOnline(params.duracaoDias),
+    vigenciaClausula12: textoDuracaoPlano(params.duracaoDias),
     assinaturaContratada: CONTRATADA_NOME,
-    assinaturaContratante: "CONTRATANTE",
-    blocoAssinaturaDigital: "Data: _______________________________________________\n\nASSINATURA DIGITAL (WhatsApp):\nDeclaro que li e concordo com todos os termos deste contrato.",
+    assinaturaContratante: params.nomeAluno,
+    blocoAssinaturaDigital:
+      "Ao assinar este contrato, ambas as partes declaram estar de acordo com todos os termos descritos acima.\n\nData: ____/____/________",
   };
 }
 
@@ -127,9 +179,9 @@ function getContratoPresencial(params: ContratoParams): ContratoEstruturado {
   };
 }
 
-/** Considera consultoria online se o nome do plano contiver "consultoria" e "online". */
+/** Considera consultoria online se o nome do plano indicar consultoria online. */
 function isConsultoriaOnline(nomePlano: string): boolean {
-  const n = nomePlano.toLowerCase().replace(/\s+/g, " ");
+  const n = nomePlano.toLowerCase().replace(/\s+/g, "_");
   return n.includes("consultoria") && n.includes("online");
 }
 

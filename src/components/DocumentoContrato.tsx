@@ -37,6 +37,16 @@ export function DocumentoContrato({ children, className = "", compact }: Documen
         "relative overflow-hidden rounded-lg bg-white print:shadow-none " + className
       }
     >
+      <div
+        className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-[0.08]"
+        aria-hidden
+      >
+        <img
+          src="/logo-watermark.png"
+          alt=""
+          className="max-h-[280px] w-[35%] max-w-[220px] object-contain"
+        />
+      </div>
       <div className={`relative font-serif text-black print:shadow-none ${compact ? "px-6 pb-8 md:px-10 md:pb-10" : "px-10 pb-12 md:px-16 md:pb-16"}`}>
         <LogoNoTopo compact={compact} />
         <div className="pt-8">
