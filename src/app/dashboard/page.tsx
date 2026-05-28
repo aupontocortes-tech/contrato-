@@ -86,7 +86,7 @@ export default function DashboardPage() {
           padding: 8px 0 12px;
         }
         .dash-logo-wrap img {
-          max-height: 120px;
+          max-height: 240px;
         }
         @media (min-width: 640px) {
           .dash-logo-wrap {
@@ -94,7 +94,7 @@ export default function DashboardPage() {
             padding: 20px 0 24px;
           }
           .dash-logo-wrap img {
-            max-height: none;
+            max-height: 400px;
           }
           .dash-stat-card {
             padding: 16px 14px !important;
@@ -127,12 +127,12 @@ export default function DashboardPage() {
           justifyContent: "center",
         }}
       >
-        <div style={{ maxWidth: "260px", width: "100%" }}>
+        <div style={{ maxWidth: "520px", width: "100%" }}>
           <Image
             src="/dashboard-logo.png"
             alt="Logo Natália Personal"
-            width={300}
-            height={200}
+            width={600}
+            height={400}
             style={{ width: "100%", height: "auto", objectFit: "contain" }}
             priority
             unoptimized
