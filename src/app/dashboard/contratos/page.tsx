@@ -490,8 +490,13 @@ export default function ContratosPage() {
             {contratos.map((c) => {
               const temArquivoAssinado = !!c.pdf_contrato_assinado_url;
               const assinado = c.status === "assinado" || temArquivoAssinado;
-              const professorAssinou = !!c.assinatura_professor_url || c.status === "professor_assinado" || c.status === "assinado";
-              const podeCopiarLink = professorAssinou && c.link_assinatura;
+              const professorAssinou =
+                temArquivoAssinado ||
+                !!c.assinatura_professor_url ||
+                c.status === "professor_assinado" ||
+                c.status === "assinado";
+              const podeCopiarLink =
+                !temArquivoAssinado && professorAssinou && !!c.link_assinatura && !assinado;
               const inputUploadId = `upload-contrato-assinado-${c.id}`;
 
               return (
@@ -536,13 +541,11 @@ export default function ContratosPage() {
                           border: `1px solid ${assinado ? "#a7f3d0" : professorAssinou ? "#c7d2fe" : "#fed7aa"}`,
                         }}
                       >
-                        {temArquivoAssinado
-                          ? "Arquivo assinado salvo"
-                          : assinado
-                            ? "Assinado"
-                            : professorAssinou
-                              ? "Aguardando aluno"
-                              : "Pendente"}
+                        {temArquivoAssinado || assinado
+                          ? "Assinado"
+                          : professorAssinou
+                            ? "Aguardando aluno"
+                            : "Pendente"}
                       </span>
                     </div>
 
@@ -625,7 +628,7 @@ export default function ContratosPage() {
                         <Link href={`/dashboard/contratos/${c.id}`} className="ct-btn">
                           Ver PDF
                         </Link>
-                        {(c.status === "gerado" || c.status === "enviado") && (
+                        {!temArquivoAssinado && (c.status === "gerado" || c.status === "enviado") && (
                           <button
                             type="button"
                             disabled={gerandoId === c.id}
@@ -692,7 +695,11 @@ export default function ContratosPage() {
                       >
                         Assinatura do professor
                       </span>
-                      {c.assinatura_professor_url ? (
+                      {temArquivoAssinado ? (
+                        <span style={{ fontSize: "13px", color: "#047857", fontWeight: 600 }}>
+                          Professor e cliente — assinaturas no arquivo enviado
+                        </span>
+                      ) : c.assinatura_professor_url ? (
                         <>
                           <img
                             src={c.assinatura_professor_url}

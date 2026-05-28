@@ -26,10 +26,12 @@ export async function GET(
       return NextResponse.json({ error: "Contrato não encontrado" }, { status: 404 });
     }
 
-    // Se houver PDF já salvo (pré-gerado ou assinado via GOV), retorna ele diretamente
-    if (contrato.pdf_url) {
-      if (contrato.pdf_url.startsWith("data:application/pdf;base64,")) {
-        const base64 = contrato.pdf_url.replace(/^data:application\/pdf;base64,/, "");
+    const urlArquivo =
+      contrato.pdf_contrato_assinado_url ?? contrato.pdf_url;
+
+    if (urlArquivo) {
+      if (urlArquivo.startsWith("data:application/pdf")) {
+        const base64 = urlArquivo.replace(/^data:application\/pdf;base64,/, "");
         const pdfBuffer = Buffer.from(base64, "base64");
         return new NextResponse(Buffer.from(pdfBuffer), {
           headers: {
@@ -39,8 +41,8 @@ export async function GET(
         });
       }
 
-      if (contrato.pdf_url.startsWith("/")) {
-        const filePath = path.join(process.cwd(), "public", contrato.pdf_url.replace(/^\//, ""));
+      if (urlArquivo.startsWith("/")) {
+        const filePath = path.join(process.cwd(), "public", urlArquivo.replace(/^\//, ""));
         try {
           const pdfBuffer = await fs.readFile(filePath);
           return new NextResponse(Buffer.from(pdfBuffer), {
@@ -50,7 +52,7 @@ export async function GET(
             },
           });
         } catch {
-          // Se não encontrar no disco, continua para fallback de geração
+          // continua para geração
         }
       }
     }

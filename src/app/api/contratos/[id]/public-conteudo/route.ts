@@ -39,11 +39,14 @@ export async function GET(
     dataFim: contrato.data_fim,
   });
 
+  const arquivoCompleto = !!contrato.pdf_contrato_assinado_url;
+
   return NextResponse.json({
     contrato: {
       id: contrato.id,
-      status: contrato.status,
+      status: arquivoCompleto ? "assinado" : contrato.status,
       assinatura_professor_url: contrato.assinatura_professor_url,
+      pdf_contrato_assinado_url: contrato.pdf_contrato_assinado_url,
       aluno: { nome_completo: contrato.aluno.nome_completo },
       plano: { nome_plano: contrato.plano.nome_plano },
     },

@@ -86,15 +86,21 @@ export async function POST(
       "assinado-completo"
     );
 
+    const agora = new Date();
+    const pdfFinal =
+      ext === ".pdf"
+        ? pdfUrl
+        : contrato.pdf_url ?? pdfUrl;
+
     try {
       await prisma.contrato.update({
         where: { id: contratoId },
         data: {
           pdf_contrato_assinado_url: pdfUrl,
-          status:
-            contrato.status === "gerado" || contrato.status === "enviado"
-              ? "assinado"
-              : contrato.status,
+          pdf_url: pdfFinal,
+          status: "assinado",
+          data_assinatura: contrato.data_assinatura ?? agora,
+          data_assinatura_professor: contrato.data_assinatura_professor ?? agora,
         },
       });
     } catch (e) {
@@ -139,9 +145,21 @@ export async function DELETE(
 
     await removerArquivoContratoPublico(contrato.pdf_contrato_assinado_url);
 
+    let statusAposRemover = "gerado";
+    if (contrato.assinatura_url && contrato.assinatura_professor_url) {
+      statusAposRemover = "assinado";
+    } else if (contrato.assinatura_professor_url) {
+      statusAposRemover = "professor_assinado";
+    } else if (contrato.link_assinatura) {
+      statusAposRemover = "enviado";
+    }
+
     await prisma.contrato.update({
       where: { id: contratoId },
-      data: { pdf_contrato_assinado_url: null },
+      data: {
+        pdf_contrato_assinado_url: null,
+        status: statusAposRemover,
+      },
     });
 
     return NextResponse.json({ ok: true });

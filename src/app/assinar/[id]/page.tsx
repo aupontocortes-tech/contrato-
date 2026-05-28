@@ -29,6 +29,7 @@ type Contrato = {
   id: number;
   status: string;
   assinatura_professor_url?: string | null;
+  pdf_contrato_assinado_url?: string | null;
   aluno: { nome_completo: string };
   plano: { nome_plano: string };
 };
@@ -495,7 +496,7 @@ export default function AssinarPage() {
     );
   }
 
-  if (contrato.status === "assinado") {
+  if (contrato.status === "assinado" || contrato.pdf_contrato_assinado_url) {
     const handleDownload = () => {
       window.open(`/api/contratos/${id}/download-pdf`, "_blank");
     };
@@ -521,7 +522,11 @@ export default function AssinarPage() {
   }
 
   // Verifica se o professor já assinou (necessário para o aluno poder assinar)
-  if (!contrato.assinatura_professor_url && contrato.status !== "professor_assinado") {
+  if (
+    !contrato.pdf_contrato_assinado_url &&
+    !contrato.assinatura_professor_url &&
+    contrato.status !== "professor_assinado"
+  ) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-muted/30">
         <Card className="w-full max-w-md">
