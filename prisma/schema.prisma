@@ -43,6 +43,7 @@ model Contrato {
   data_fim              DateTime
   link_assinatura       String?
   pdf_url               String?
+  pdf_contrato_assinado_url String? // arquivo enviado pelo professor (contrato ja assinado pelas duas partes)
   assinatura_professor_url String?
   data_assinatura_professor DateTime?
   assinatura_url        String?

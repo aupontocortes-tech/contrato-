@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-
-/** Código fixo para confirmar exclusão (pode ser alterado por variável de ambiente) */
-const CODIGO_EXCLUSAO = process.env.CODIGO_EXCLUSAO_CONTRATO || "1234";
+import { codigoExclusaoValido } from "@/lib/codigo-exclusao";
 
 export async function POST(
   request: Request,
@@ -22,7 +20,7 @@ export async function POST(
   }
 
   const codigo = String(body?.codigo ?? "").trim();
-  if (codigo !== CODIGO_EXCLUSAO) {
+  if (!codigoExclusaoValido(codigo)) {
     return NextResponse.json({ error: "Código incorreto. Contrato não excluído." }, { status: 403 });
   }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, type CSSProperties } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -20,6 +20,7 @@ type Contrato = {
   data_fim: string;
   link_assinatura: string | null;
   pdf_url: string | null;
+  pdf_contrato_assinado_url: string | null;
   assinatura_professor_url: string | null;
   criado_em: string;
   aluno: Aluno;
@@ -40,8 +41,57 @@ function isPlanoList(value: unknown): value is Plano[] {
 
 const btnPrimary = { padding: "10px 18px", borderRadius: "10px", border: "none", backgroundColor: "#4f46e5", color: "#fff", fontWeight: 600, cursor: "pointer", fontSize: "14px", boxShadow: "0 8px 20px rgba(79,70,229,0.25)" };
 const btnSecondary = { padding: "10px 18px", borderRadius: "10px", border: "1px solid #cbd5e1", backgroundColor: "#fff", color: "#1f2937", fontWeight: 600, cursor: "pointer", fontSize: "14px" };
+const btnAction: CSSProperties = {
+  padding: "0 14px",
+  minHeight: "40px",
+  borderRadius: "8px",
+  border: "1px solid #cbd5e1",
+  backgroundColor: "#fff",
+  color: "#334155",
+  fontWeight: 600,
+  cursor: "pointer",
+  fontSize: "13px",
+  lineHeight: 1.2,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  whiteSpace: "nowrap",
+  boxSizing: "border-box",
+  textDecoration: "none",
+};
+const btnDanger: CSSProperties = {
+  ...btnAction,
+  color: "#b91c1c",
+  borderColor: "#fecaca",
+  backgroundColor: "#fff",
+};
 const inputSelect = { padding: "10px 12px", borderRadius: "10px", border: "1px solid #cbd5e1", backgroundColor: "#fff", fontSize: "14px", minWidth: "200px", width: "100%" };
 const card = { backgroundColor: "#fff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "22px", marginBottom: "18px", boxShadow: "0 8px 24px rgba(15,23,42,0.07)" };
+const contratoItemCard: CSSProperties = {
+  padding: "20px 22px",
+  borderBottom: "1px solid #e2e8f0",
+  backgroundColor: "#fff",
+};
+const contratoRowGrid: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "minmax(0, 1fr) auto auto",
+  gap: "20px 16px",
+  alignItems: "end",
+};
+const contratoBtnRow: CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: "8px",
+  alignItems: "center",
+  justifyContent: "flex-end",
+};
+const contratoUploadBox: CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "8px",
+  alignItems: "flex-end",
+  minWidth: "min(100%, 240px)",
+};
 
 export default function ContratosPage() {
   const [contratos, setContratos] = useState<Contrato[]>([]);
@@ -62,6 +112,34 @@ export default function ContratosPage() {
   const [contratoParaExcluir, setContratoParaExcluir] = useState<number | null>(null);
   const [codigoExcluir, setCodigoExcluir] = useState("");
   const [excluindo, setExcluindo] = useState(false);
+  const [uploadingId, setUploadingId] = useState<number | null>(null);
+  const [modalExcluirArquivoOpen, setModalExcluirArquivoOpen] = useState(false);
+  const [contratoParaExcluirArquivo, setContratoParaExcluirArquivo] = useState<number | null>(null);
+  const [codigoExcluirArquivo, setCodigoExcluirArquivo] = useState("");
+  const [excluindoArquivo, setExcluindoArquivo] = useState(false);
+
+  async function handleUploadContratoAssinado(contratoId: number, file: File) {
+    setUploadingId(contratoId);
+    try {
+      const fd = new FormData();
+      fd.append("arquivo", file);
+      const res = await fetch(`/api/contratos/${contratoId}/upload-assinado`, {
+        method: "POST",
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        toast.error(data.error || "Erro ao enviar arquivo.");
+        return;
+      }
+      toast.success("Contrato assinado salvo no aplicativo.");
+      load();
+    } catch {
+      toast.error("Erro de conexão ao enviar arquivo.");
+    } finally {
+      setUploadingId(null);
+    }
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -213,6 +291,24 @@ export default function ContratosPage() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      <style>{`
+        @media (max-width: 960px) {
+          .contrato-card-top {
+            grid-template-columns: 1fr !important;
+          }
+          .contrato-card-top .contrato-col-upload,
+          .contrato-card-top .contrato-col-actions {
+            align-items: flex-start !important;
+          }
+          .contrato-card-top .contrato-col-upload span,
+          .contrato-card-top .contrato-col-actions span {
+            text-align: left !important;
+          }
+          .contrato-card-top .contrato-btn-row {
+            justify-content: flex-start !important;
+          }
+        }
+      `}</style>
       <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
         <h1 style={{ fontSize: "32px", fontWeight: 700, color: "#0f172a", letterSpacing: "-0.02em" }}>Contratos</h1>
         <span style={{ fontSize: "12px", backgroundColor: "#e0e7ff", color: "#3730a3", padding: "6px 10px", borderRadius: "999px", fontWeight: 700 }}>
@@ -330,47 +426,140 @@ export default function ContratosPage() {
         {screenState === "success" && (
           <div style={{ borderTop: "1px solid #e2e8f0" }}>
             {contratos.map((c) => {
-              const assinado = c.status === "assinado";
+              const temArquivoAssinado = !!c.pdf_contrato_assinado_url;
+              const assinado = c.status === "assinado" || temArquivoAssinado;
               const professorAssinou = !!c.assinatura_professor_url || c.status === "professor_assinado" || c.status === "assinado";
               const podeCopiarLink = professorAssinou && c.link_assinatura;
+              const inputUploadId = `upload-contrato-assinado-${c.id}`;
 
               return (
-                <div
-                  key={c.id}
-                  style={{
-                    padding: "20px",
-                    borderBottom: "1px solid #e2e8f0",
-                    background: "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
-                  }}
-                >
-                  <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                    <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "16px" }}>
-                      <div>
-                        <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: "4px", letterSpacing: "-0.01em" }}>
-                          {c.aluno.nome_completo} · {labelPlano(c.plano.nome_plano, c.plano.duracao_dias)}
-                        </div>
-                        <p style={{ fontSize: "14px", color: "#64748b", marginBottom: "10px" }}>
-                          {new Date(c.data_inicio).toLocaleDateString("pt-BR")} a {new Date(c.data_fim).toLocaleDateString("pt-BR")}
-                        </p>
-                        <span
-                          style={{
-                            display: "inline-block",
-                            fontSize: "12px",
-                            fontWeight: 500,
-                            padding: "5px 12px",
-                            borderRadius: "999px",
-                            backgroundColor: assinado ? "#dcfce7" : professorAssinou ? "#e0e7ff" : "#ffedd5",
-                            color: assinado ? "#166534" : professorAssinou ? "#4338ca" : "#c2410c",
-                          }}
-                        >
-                          {assinado ? "Assinado" : professorAssinou ? "Aguardando aluno" : "Pendente"}
-                        </span>
+                <article key={c.id} style={contratoItemCard}>
+                  <div
+                    className="contrato-card-top"
+                    style={{
+                      ...contratoRowGrid,
+                    }}
+                  >
+                    <div style={{ minWidth: 0 }}>
+                      <h3
+                        style={{
+                          margin: "0 0 6px",
+                          fontWeight: 700,
+                          fontSize: "16px",
+                          color: "#0f172a",
+                          letterSpacing: "-0.02em",
+                          lineHeight: 1.35,
+                        }}
+                      >
+                        {c.aluno.nome_completo}
+                      </h3>
+                      <p style={{ margin: "0 0 4px", fontSize: "14px", color: "#475569", fontWeight: 500 }}>
+                        {labelPlano(c.plano.nome_plano, c.plano.duracao_dias)}
+                      </p>
+                      <p style={{ margin: "0 0 12px", fontSize: "13px", color: "#64748b" }}>
+                        {new Date(c.data_inicio).toLocaleDateString("pt-BR")} —{" "}
+                        {new Date(c.data_fim).toLocaleDateString("pt-BR")}
+                      </p>
+                      <span
+                        style={{
+                          display: "inline-block",
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          letterSpacing: "0.04em",
+                          textTransform: "uppercase",
+                          padding: "4px 10px",
+                          borderRadius: "6px",
+                          backgroundColor: assinado ? "#ecfdf5" : professorAssinou ? "#eef2ff" : "#fff7ed",
+                          color: assinado ? "#047857" : professorAssinou ? "#4338ca" : "#c2410c",
+                          border: `1px solid ${assinado ? "#a7f3d0" : professorAssinou ? "#c7d2fe" : "#fed7aa"}`,
+                        }}
+                      >
+                        {temArquivoAssinado
+                          ? "Arquivo assinado salvo"
+                          : assinado
+                            ? "Assinado"
+                            : professorAssinou
+                              ? "Aguardando aluno"
+                              : "Pendente"}
+                      </span>
+                    </div>
+
+                    <div className="contrato-col-upload" style={contratoUploadBox}>
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          color: "#64748b",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                          alignSelf: "stretch",
+                          textAlign: "right",
+                        }}
+                      >
+                        Contrato assinado
+                      </span>
+                      <input
+                        id={inputUploadId}
+                        type="file"
+                        accept=".pdf,application/pdf,image/*"
+                        style={{ display: "none" }}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleUploadContratoAssinado(c.id, file);
+                          e.target.value = "";
+                        }}
+                      />
+                      <div className="contrato-btn-row" style={contratoBtnRow}>
+                        {temArquivoAssinado ? (
+                          <>
+                            <a href={c.pdf_contrato_assinado_url!} target="_blank" rel="noopener noreferrer" style={btnAction}>
+                              Ver arquivo salvo
+                            </a>
+                            <button
+                              type="button"
+                              style={btnDanger}
+                              onClick={() => {
+                                setContratoParaExcluirArquivo(c.id);
+                                setCodigoExcluirArquivo("");
+                                setModalExcluirArquivoOpen(true);
+                              }}
+                            >
+                              Excluir arquivo
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={uploadingId === c.id}
+                            onClick={() => document.getElementById(inputUploadId)?.click()}
+                            style={{
+                              ...btnAction,
+                              opacity: uploadingId === c.id ? 0.65 : 1,
+                              cursor: uploadingId === c.id ? "wait" : "pointer",
+                            }}
+                          >
+                            {uploadingId === c.id ? "Salvando..." : "Enviar contrato assinado"}
+                          </button>
+                        )}
                       </div>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                        <Link
-                          href={`/dashboard/contratos/${c.id}`}
-                          style={{ ...btnSecondary, textDecoration: "none", display: "inline-flex", alignItems: "center" }}
-                        >
+                    </div>
+
+                    <div className="contrato-col-actions" style={contratoUploadBox}>
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          color: "#64748b",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                          alignSelf: "stretch",
+                          textAlign: "right",
+                        }}
+                      >
+                        Ações
+                      </span>
+                      <div className="contrato-btn-row" style={contratoBtnRow}>
+                        <Link href={`/dashboard/contratos/${c.id}`} style={btnAction}>
                           Ver PDF
                         </Link>
                         {(c.status === "gerado" || c.status === "enviado") && (
@@ -378,7 +567,11 @@ export default function ContratosPage() {
                             type="button"
                             disabled={gerandoId === c.id}
                             onClick={() => handleGerar(c.id)}
-                            style={btnSecondary}
+                            style={{
+                              ...btnAction,
+                              opacity: gerandoId === c.id ? 0.65 : 1,
+                              cursor: gerandoId === c.id ? "wait" : "pointer",
+                            }}
                           >
                             {gerandoId === c.id ? "Gerando..." : "Gerar PDF e link"}
                           </button>
@@ -387,85 +580,114 @@ export default function ContratosPage() {
                           <>
                             <button
                               type="button"
-                              onClick={() => copyLink(`${typeof window !== "undefined" ? window.location.origin : ""}/assinar/${c.id}`)}
-                              style={btnSecondary}
+                              onClick={() =>
+                                copyLink(`${typeof window !== "undefined" ? window.location.origin : ""}/assinar/${c.id}`)
+                              }
+                              style={btnAction}
                             >
                               Copiar link
                             </button>
                             <button
                               type="button"
                               onClick={() =>
-                                copyWhatsAppLink(`${typeof window !== "undefined" ? window.location.origin : ""}/assinar/${c.id}`)
+                                copyWhatsAppLink(
+                                  `${typeof window !== "undefined" ? window.location.origin : ""}/assinar/${c.id}`
+                                )
                               }
-                              style={btnSecondary}
+                              style={btnAction}
                             >
                               Enviar WhatsApp
                             </button>
                           </>
                         )}
                         {c.pdf_url && (
-                          <a
-                            href={c.pdf_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{ ...btnSecondary, textDecoration: "none", display: "inline-flex", alignItems: "center" }}
-                          >
+                          <a href={c.pdf_url} target="_blank" rel="noopener noreferrer" style={btnAction}>
                             Baixar PDF
                           </a>
                         )}
                       </div>
                     </div>
-                    <div style={{ paddingTop: "10px", borderTop: "1px solid #e2e8f0" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap", marginBottom: "8px" }}>
-                        <span style={{ fontSize: "12px", fontWeight: 600, color: "#64748b" }}>Assinatura do Professor:</span>
-                        {c.assinatura_professor_url ? (
-                          <>
-                            <img
-                              src={c.assinatura_professor_url}
-                              alt="Assinatura do professor"
-                              style={{ height: "48px", border: "1px solid #cbd5e1", borderRadius: "8px", backgroundColor: "#fff" }}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setContratoParaAssinar(c.id);
-                                setModalAssinaturaOpen(true);
-                              }}
-                              style={{ ...btnSecondary, padding: "6px 10px", fontSize: "12px" }}
-                            >
-                              Alterar
-                            </button>
-                          </>
-                        ) : (
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: "18px",
+                      paddingTop: "16px",
+                      borderTop: "1px solid #e2e8f0",
+                      display: "flex",
+                      flexWrap: "wrap",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "12px",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          color: "#64748b",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                        }}
+                      >
+                        Assinatura do professor
+                      </span>
+                      {c.assinatura_professor_url ? (
+                        <>
+                          <img
+                            src={c.assinatura_professor_url}
+                            alt="Assinatura do professor"
+                            style={{
+                              height: "44px",
+                              border: "1px solid #e2e8f0",
+                              borderRadius: "8px",
+                              backgroundColor: "#f8fafc",
+                              padding: "4px 8px",
+                            }}
+                          />
                           <button
                             type="button"
-                            disabled={!c.link_assinatura}
                             onClick={() => {
                               setContratoParaAssinar(c.id);
                               setModalAssinaturaOpen(true);
                             }}
-                            style={btnSecondary}
+                            style={btnAction}
                           >
-                            {c.link_assinatura ? "Assinar" : "Aguardando geração"}
+                            Alterar
                           </button>
-                        )}
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "flex-start", width: "100%" }}>
+                        </>
+                      ) : (
                         <button
                           type="button"
+                          disabled={!c.link_assinatura}
                           onClick={() => {
-                            setContratoParaExcluir(c.id);
-                            setCodigoExcluir("");
-                            setModalExcluirOpen(true);
+                            setContratoParaAssinar(c.id);
+                            setModalAssinaturaOpen(true);
                           }}
-                          style={{ ...btnSecondary, color: "#b91c1c", borderColor: "#b91c1c", minWidth: "auto", width: "auto" }}
+                          style={{
+                            ...btnAction,
+                            opacity: !c.link_assinatura ? 0.5 : 1,
+                            cursor: !c.link_assinatura ? "not-allowed" : "pointer",
+                          }}
                         >
-                          Excluir
+                          {c.link_assinatura ? "Assinar" : "Aguardando geração"}
                         </button>
-                      </div>
+                      )}
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setContratoParaExcluir(c.id);
+                        setCodigoExcluir("");
+                        setModalExcluirOpen(true);
+                      }}
+                      style={btnDanger}
+                    >
+                      Excluir
+                    </button>
                   </div>
-                </div>
+                </article>
               );
             })}
           </div>
@@ -512,7 +734,7 @@ export default function ContratosPage() {
               Excluir contrato
             </h3>
             <p style={{ margin: "0 0 16px", fontSize: "14px", color: "#6b7280" }}>
-              Digite o código de confirmação 1234 para excluir este contrato.
+              Digite a senha <strong>1234</strong> para excluir este contrato.
             </p>
             <input
               type="text"
@@ -572,6 +794,103 @@ export default function ContratosPage() {
                 style={{ ...btnPrimary, backgroundColor: "#b91c1c", boxShadow: "0 8px 20px rgba(185,28,28,0.25)" }}
               >
                 {excluindo ? "Excluindo..." : "Confirmar exclusão"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modalExcluirArquivoOpen && contratoParaExcluirArquivo !== null && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 100,
+          }}
+          onClick={() => setModalExcluirArquivoOpen(false)}
+        >
+          <div
+            style={{
+              backgroundColor: "#fff",
+              padding: "24px",
+              borderRadius: "16px",
+              maxWidth: "360px",
+              width: "90%",
+              boxShadow: "0 20px 45px rgba(15,23,42,0.2)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: "0 0 8px", fontSize: "18px", fontWeight: 600, color: "#111827" }}>
+              Excluir arquivo do contrato
+            </h3>
+            <p style={{ margin: "0 0 16px", fontSize: "14px", color: "#6b7280" }}>
+              Digite a senha <strong>1234</strong> para remover o contrato assinado salvo. O contrato continua na lista.
+            </p>
+            <input
+              type="password"
+              inputMode="numeric"
+              placeholder="Senha"
+              value={codigoExcluirArquivo}
+              onChange={(e) => setCodigoExcluirArquivo(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: "10px",
+                border: "1px solid #cbd5e1",
+                fontSize: "16px",
+                marginBottom: "16px",
+                boxSizing: "border-box",
+              }}
+            />
+            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setModalExcluirArquivoOpen(false);
+                  setContratoParaExcluirArquivo(null);
+                  setCodigoExcluirArquivo("");
+                }}
+                style={btnSecondary}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={excluindoArquivo || !codigoExcluirArquivo.trim()}
+                onClick={async () => {
+                  setExcluindoArquivo(true);
+                  try {
+                    const res = await fetch(
+                      `/api/contratos/${contratoParaExcluirArquivo}/upload-assinado`,
+                      {
+                        method: "DELETE",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ codigo: codigoExcluirArquivo.trim() }),
+                      }
+                    );
+                    const data = await res.json();
+                    if (res.ok && data.ok) {
+                      toast.success("Arquivo removido.");
+                      setModalExcluirArquivoOpen(false);
+                      setContratoParaExcluirArquivo(null);
+                      setCodigoExcluirArquivo("");
+                      load();
+                    } else {
+                      toast.error(data.error || "Senha incorreta.");
+                    }
+                  } catch {
+                    toast.error("Erro ao excluir arquivo.");
+                  } finally {
+                    setExcluindoArquivo(false);
+                  }
+                }}
+                style={{ ...btnPrimary, backgroundColor: "#b91c1c", boxShadow: "0 8px 20px rgba(185,28,28,0.25)" }}
+              >
+                {excluindoArquivo ? "Excluindo..." : "Confirmar"}
               </button>
             </div>
           </div>
