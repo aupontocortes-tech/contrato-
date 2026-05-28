@@ -4,6 +4,7 @@ import fs from "fs/promises";
 import { prisma } from "@/lib/prisma";
 import { getContratoEstruturado } from "@/lib/contrato-template";
 import { gerarPdfAssinado, gerarPdfFromContrato } from "@/lib/gerar-pdf";
+import { cpfParaExibicao } from "@/lib/cpf-aluno";
 
 export async function GET(
   request: Request,
@@ -60,7 +61,7 @@ export async function GET(
     // Preparar dados do contrato
     const contratoParams = {
       nomeAluno: contrato.aluno.nome_completo,
-      cpf: contrato.aluno.cpf,
+      cpf: cpfParaExibicao(contrato.aluno),
       email: contrato.aluno.email,
       telefone: contrato.aluno.telefone,
       nomePlano: contrato.plano.nome_plano,

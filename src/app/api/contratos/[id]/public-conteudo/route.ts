@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getContratoEstruturado } from "@/lib/contrato-template";
+import { cpfParaExibicao } from "@/lib/cpf-aluno";
 
 /** Conteúdo completo do contrato para exibição na página pública de assinatura (sem auth). */
 export async function GET(
@@ -30,7 +31,7 @@ export async function GET(
 
   const conteudo = getContratoEstruturado({
     nomeAluno: contrato.aluno.nome_completo,
-    cpf: contrato.aluno.cpf,
+    cpf: cpfParaExibicao(contrato.aluno),
     email: contrato.aluno.email,
     telefone: contrato.aluno.telefone,
     nomePlano: contrato.plano.nome_plano,

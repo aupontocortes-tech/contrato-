@@ -20,6 +20,13 @@ type AlunoForm = {
   telefone: string;
 };
 
+const formInicial: AlunoForm = {
+  nome_completo: "",
+  cpf: "",
+  email: "",
+  telefone: "",
+};
+
 export function AlunoModal({
   open,
   onOpenChange,
@@ -29,13 +36,23 @@ export function AlunoModal({
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
 }) {
-  const [form, setForm] = useState<AlunoForm>({
-    nome_completo: "",
-    cpf: "",
-    email: "",
-    telefone: "",
-  });
+  const [form, setForm] = useState<AlunoForm>(formInicial);
+  const [cpfNaoInformado, setCpfNaoInformado] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  function resetForm() {
+    setForm(formInicial);
+    setCpfNaoInformado(false);
+  }
+
+  function marcarCpfNaoInformado() {
+    setCpfNaoInformado(true);
+    setForm((f) => ({ ...f, cpf: "" }));
+  }
+
+  function desmarcarCpfNaoInformado() {
+    setCpfNaoInformado(false);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -45,8 +62,11 @@ export function AlunoModal({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...form,
+          nome_completo: form.nome_completo,
+          email: form.email,
           telefone: form.telefone || undefined,
+          cpf_nao_informado: cpfNaoInformado,
+          cpf: cpfNaoInformado ? undefined : form.cpf,
         }),
       });
       const data = await res.json();
@@ -55,7 +75,7 @@ export function AlunoModal({
         return;
       }
       toast.success("Aluno cadastrado!");
-      setForm({ nome_completo: "", cpf: "", email: "", telefone: "" });
+      resetForm();
       onOpenChange(false);
       onSuccess();
     } catch {
@@ -66,7 +86,13 @@ export function AlunoModal({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) resetForm();
+        onOpenChange(next);
+      }}
+    >
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Novo aluno</DialogTitle>
@@ -90,10 +116,31 @@ export function AlunoModal({
             <Input
               id="cpf"
               value={form.cpf}
-              onChange={(e) => setForm((f) => ({ ...f, cpf: e.target.value }))}
-              required
-              placeholder="000.000.000-00"
+              onChange={(e) => {
+                desmarcarCpfNaoInformado();
+                setForm((f) => ({ ...f, cpf: e.target.value }));
+              }}
+              required={!cpfNaoInformado}
+              disabled={cpfNaoInformado}
+              placeholder={cpfNaoInformado ? "não informado" : "000.000.000-00"}
+              className={cpfNaoInformado ? "bg-muted text-muted-foreground" : undefined}
             />
+            <Button
+              type="button"
+              variant={cpfNaoInformado ? "default" : "outline"}
+              size="sm"
+              className="w-full"
+              onClick={() =>
+                cpfNaoInformado ? desmarcarCpfNaoInformado() : marcarCpfNaoInformado()
+              }
+            >
+              {cpfNaoInformado ? "Informar CPF" : "CPF não informado"}
+            </Button>
+            {cpfNaoInformado && (
+              <p className="text-xs text-muted-foreground">
+                No contrato aparecerá: <strong>CPF: não informado</strong>
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">E-mail</Label>

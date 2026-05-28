@@ -5,6 +5,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getContratoEstruturado } from "@/lib/contrato-template";
 import { gerarPdfFromContrato } from "@/lib/gerar-pdf";
+import { cpfParaExibicao } from "@/lib/cpf-aluno";
 
 type ContratoComAlunoPlano = Prisma.ContratoGetPayload<{ include: { aluno: true; plano: true } }>;
 
@@ -35,7 +36,7 @@ export async function POST(
 
   const contratoParams = {
     nomeAluno: contrato.aluno.nome_completo,
-    cpf: contrato.aluno.cpf,
+    cpf: cpfParaExibicao(contrato.aluno),
     email: contrato.aluno.email,
     telefone: contrato.aluno.telefone,
     nomePlano: contrato.plano.nome_plano,

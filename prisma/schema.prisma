@@ -18,12 +18,13 @@ model User {
 }
 
 model Aluno {
-  id           Int        @id @default(autoincrement())
-  nome_completo String
-  cpf         String     @unique
-  email       String
-  telefone    String?
-  contratos   Contrato[]
+  id                Int        @id @default(autoincrement())
+  nome_completo     String
+  cpf               String?    @unique
+  cpf_nao_informado Boolean    @default(false)
+  email             String
+  telefone          String?
+  contratos         Contrato[]
 }
 
 model Plano {

@@ -7,11 +7,13 @@ import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
 import { AlunoModal } from "@/components/aluno-modal";
 import { ExcluirAlunoModal } from "@/components/excluir-aluno-modal";
+import { cpfParaExibicao } from "@/lib/cpf-aluno";
 
 type Aluno = {
   id: number;
   nome_completo: string;
-  cpf: string;
+  cpf: string | null;
+  cpf_nao_informado?: boolean;
   email: string;
   telefone: string | null;
 };
@@ -92,7 +94,7 @@ export default function AlunosPage() {
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-gray-900">{a.nome_completo}</p>
                       <p className="text-sm text-gray-600 mt-1">
-                        {a.email} · CPF {a.cpf}
+                        {a.email} · CPF {cpfParaExibicao(a)}
                         {a.telefone && ` · ${a.telefone}`}
                       </p>
                     </div>
