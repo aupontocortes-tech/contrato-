@@ -16,10 +16,14 @@ type Stats = {
 
 const cardStyle: CSSProperties = {
   border: "1px solid #e2e8f0",
-  borderRadius: "16px",
+  borderRadius: "12px",
   backgroundColor: "#fff",
-  padding: "18px",
-  boxShadow: "0 6px 24px rgba(15,23,42,0.06)",
+  padding: "12px 10px",
+  boxShadow: "0 2px 10px rgba(15,23,42,0.05)",
+  minHeight: "88px",
+  display: "flex",
+  flexDirection: "column",
+  justifyContent: "space-between",
 };
 
 export default function DashboardPage() {
@@ -69,12 +73,44 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <div style={{ padding: "8px 4px 20px" }}>
+    <div className="dash-page" style={{ padding: "8px 4px 20px" }}>
+      <style>{`
+        .dash-stats-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+          width: 100%;
+        }
+        .dash-logo-wrap {
+          margin-bottom: 16px;
+          padding: 8px 0 12px;
+        }
+        .dash-logo-wrap img {
+          max-height: 120px;
+        }
+        @media (min-width: 640px) {
+          .dash-logo-wrap {
+            margin-bottom: 28px;
+            padding: 20px 0 24px;
+          }
+          .dash-logo-wrap img {
+            max-height: none;
+          }
+          .dash-stat-card {
+            padding: 16px 14px !important;
+            min-height: 100px !important;
+          }
+          .dash-stat-value {
+            font-size: 28px !important;
+          }
+        }
+      `}</style>
       <h1
+        className="dash-title"
         style={{
-          fontSize: "30px",
+          fontSize: "22px",
           fontWeight: 700,
-          marginBottom: "24px",
+          marginBottom: "12px",
           color: "#0f172a",
           letterSpacing: "-0.02em",
         }}
@@ -83,16 +119,15 @@ export default function DashboardPage() {
       </h1>
 
       <div
+        className="dash-logo-wrap"
         style={{
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          marginBottom: "32px",
-          padding: "20px 0 28px",
         }}
       >
-        <div style={{ maxWidth: "300px", width: "100%" }}>
+        <div style={{ maxWidth: "260px", width: "100%" }}>
           <Image
             src="/dashboard-logo.png"
             alt="Logo Natália Personal"
@@ -105,37 +140,30 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            gap: "16px",
-          }}
-        >
+      <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+        <div className="dash-stats-grid">
           <StatCard
-            label="Total de Alunos"
-            value={loading ? "..." : stats.totalAlunos}
-            icon={<Users style={{ width: 20, height: 20, color: "#4f46e5" }} />}
+            label="Total de alunos"
+            value={loading ? "…" : stats.totalAlunos}
+            icon={<Users style={{ width: 18, height: 18, color: "#4f46e5" }} />}
             iconBg="#eef2ff"
           />
           <StatCard
-            label="Contratos Assinados"
-            value={loading ? "..." : stats.contratosAssinados}
-            icon={<CheckCircle2 style={{ width: 20, height: 20, color: "#16a34a" }} />}
+            label="Contratos assinados"
+            value={loading ? "…" : stats.contratosAssinados}
+            icon={<CheckCircle2 style={{ width: 18, height: 18, color: "#16a34a" }} />}
             iconBg="#ecfdf5"
           />
           <StatCard
-            label="Contratos Ativos"
-            value={loading ? "..." : stats.contratosAtivos}
-            subtitle="Vigência em andamento"
-            icon={<FileText style={{ width: 20, height: 20, color: "#0891b2" }} />}
+            label="Contratos ativos"
+            value={loading ? "…" : stats.contratosAtivos}
+            icon={<FileText style={{ width: 18, height: 18, color: "#0891b2" }} />}
             iconBg="#ecfeff"
           />
           <StatCard
             label="Pendentes"
-            value={loading ? "..." : stats.contratosPendentes}
-            icon={<Clock style={{ width: 20, height: 20, color: "#ea580c" }} />}
+            value={loading ? "…" : stats.contratosPendentes}
+            icon={<Clock style={{ width: 18, height: 18, color: "#ea580c" }} />}
             iconBg="#fff7ed"
           />
         </div>
@@ -143,75 +171,58 @@ export default function DashboardPage() {
         <section
           style={{
             border: "1px solid #e2e8f0",
-            borderRadius: "18px",
-            background: "linear-gradient(135deg, #f8fafc 0%, #ffffff 50%, #eef2ff 100%)",
-            padding: "24px",
-            boxShadow: "0 8px 28px rgba(79,70,229,0.08)",
+            borderRadius: "14px",
+            background: "linear-gradient(135deg, #f8fafc 0%, #ffffff 55%, #eef2ff 100%)",
+            padding: "14px",
+            boxShadow: "0 4px 16px rgba(79,70,229,0.07)",
           }}
         >
-          <div
+          <h2
             style={{
-              display: "flex",
-              flexWrap: "wrap",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "20px",
+              margin: "0 0 6px",
+              fontSize: "16px",
+              fontWeight: 700,
+              color: "#0f172a",
             }}
           >
-            <div style={{ flex: "1 1 280px" }}>
-              <h2
-                style={{
-                  margin: "0 0 8px",
-                  fontSize: "20px",
-                  fontWeight: 700,
-                  color: "#0f172a",
-                }}
-              >
-                Contratos assinados
-              </h2>
-              <p style={{ margin: 0, fontSize: "14px", color: "#64748b", lineHeight: 1.5 }}>
-                Visualize todos os contratos já assinados (digital ou arquivo enviado), com busca
-                por aluno e acesso rápido ao PDF.
-              </p>
-              {!loading && (
-                <p
-                  style={{
-                    margin: "12px 0 0",
-                    fontSize: "13px",
-                    fontWeight: 600,
-                    color: "#4338ca",
-                  }}
-                >
-                  {stats.contratosAssinados} contrato(s) na lista
-                </p>
-              )}
-            </div>
-            <Link href="/dashboard/contratos-assinados" style={{ textDecoration: "none" }}>
-              <button
-                type="button"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  padding: "14px 22px",
-                  background: "linear-gradient(180deg, #6366f1 0%, #4f46e5 100%)",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "12px",
-                  fontSize: "15px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  boxShadow: "0 8px 24px rgba(79,70,229,0.35)",
-                }}
-              >
-                Ver contratos assinados
-                <ChevronRight size={18} />
-              </button>
-            </Link>
-          </div>
+            Contratos assinados
+          </h2>
+          <p style={{ margin: "0 0 12px", fontSize: "12px", color: "#64748b", lineHeight: 1.45 }}>
+            Lista organizada com busca e PDF.
+            {!loading && (
+              <strong style={{ color: "#4338ca", fontWeight: 600 }}>
+                {" "}
+                ({stats.contratosAssinados})
+              </strong>
+            )}
+          </p>
+          <Link href="/dashboard/contratos-assinados" style={{ textDecoration: "none", display: "block" }}>
+            <button
+              type="button"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "6px",
+                width: "100%",
+                padding: "12px 16px",
+                background: "linear-gradient(180deg, #6366f1 0%, #4f46e5 100%)",
+                color: "#fff",
+                border: "none",
+                borderRadius: "10px",
+                fontSize: "14px",
+                fontWeight: 600,
+                cursor: "pointer",
+                boxShadow: "0 4px 14px rgba(79,70,229,0.3)",
+              }}
+            >
+              Ver contratos assinados
+              <ChevronRight size={16} />
+            </button>
+          </Link>
         </section>
 
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", paddingTop: "8px" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
           <Link href="/dashboard/contratos" style={{ textDecoration: "none" }}>
             <button
               type="button"
@@ -328,32 +339,60 @@ export default function DashboardPage() {
 function StatCard({
   label,
   value,
-  subtitle,
   icon,
   iconBg,
 }: {
   label: string;
   value: string | number;
-  subtitle?: string;
   icon: ReactNode;
   iconBg: string;
 }) {
   return (
-    <div style={cardStyle}>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-        <div>
-          <p style={{ fontSize: "14px", color: "#64748b", marginBottom: "6px", fontWeight: 500 }}>
-            {label}
-          </p>
-          <p style={{ fontSize: "28px", fontWeight: 700, color: "#0f172a", letterSpacing: "-0.02em" }}>
-            {value}
-          </p>
-          {subtitle && (
-            <p style={{ fontSize: "12px", color: "#94a3b8", marginTop: "4px" }}>{subtitle}</p>
-          )}
+    <div className="dash-stat-card" style={cardStyle}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "6px",
+        }}
+      >
+        <p
+          style={{
+            fontSize: "11px",
+            color: "#64748b",
+            margin: 0,
+            fontWeight: 600,
+            lineHeight: 1.25,
+            flex: 1,
+          }}
+        >
+          {label}
+        </p>
+        <div
+          style={{
+            padding: "6px",
+            backgroundColor: iconBg,
+            borderRadius: "8px",
+            flexShrink: 0,
+          }}
+        >
+          {icon}
         </div>
-        <div style={{ padding: "10px", backgroundColor: iconBg, borderRadius: "12px" }}>{icon}</div>
       </div>
+      <p
+        className="dash-stat-value"
+        style={{
+          fontSize: "24px",
+          fontWeight: 700,
+          color: "#0f172a",
+          letterSpacing: "-0.02em",
+          margin: "6px 0 0",
+          lineHeight: 1,
+        }}
+      >
+        {value}
+      </p>
     </div>
   );
 }
