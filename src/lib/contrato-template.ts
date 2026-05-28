@@ -1,3 +1,10 @@
+import {
+  isConsultoriaOnlinePlano,
+  rotuloPeriodoContrato,
+  textoExplicitoPeriodo,
+  tipoPeriodoConsultoriaOnline,
+} from "@/lib/planos";
+
 const CONTRATADA_NOME = "Natália Marques Carvalho";
 const CONTRATADA_TITULO = "Personal Trainer";
 
@@ -17,35 +24,34 @@ const CLAUSULAS_PRESENCIAL = [
 ];
 
 /** Texto da duração do plano (modelo consultoria online personalizada). */
-function textoDuracaoPlano(duracaoDias: number): string {
-  if (duracaoDias >= 365) {
-    return "12 (doze) meses, contados a partir da data de início do acompanhamento.";
+function textoDuracaoPlano(duracaoDias: number, tipo: "mensal" | "trimestral" | "semestral"): string {
+  switch (tipo) {
+    case "mensal":
+      return "01 (um) mês (30 dias), contado a partir da data de início do acompanhamento.";
+    case "trimestral":
+      return "03 (três) meses (90 dias), contados a partir da data de início do acompanhamento.";
+    case "semestral":
+      return "06 (seis) meses (180 dias), contados a partir da data de início do acompanhamento.";
+    default:
+      return `${duracaoDias} dias, contados a partir da data de início do acompanhamento.`;
   }
-  if (duracaoDias >= 180) {
-    return "6 (seis) meses, contados a partir da data de início do acompanhamento.";
-  }
-  if (duracaoDias >= 90) {
-    return "03 (três) meses, contados a partir da data de início do acompanhamento.";
-  }
-  if (duracaoDias >= 30) {
-    return "01 (um) mês, contado a partir da data de início do acompanhamento.";
-  }
-  return `${duracaoDias} dias, contados a partir da data de início do acompanhamento.`;
 }
 
 /** Cláusulas do contrato de Consultoria Online Personalizada (texto do modelo; sem dados de terceiros). */
-function clausulasConsultoriaOnline(duracaoDias: number) {
+function clausulasConsultoriaOnline(nomePlano: string, duracaoDias: number) {
+  const tipo = tipoPeriodoConsultoriaOnline(nomePlano, duracaoDias);
+  const periodoExplicito = textoExplicitoPeriodo(tipo);
   return [
     {
       numero: "1",
       titulo: "OBJETO DO CONTRATO",
       texto:
-        "O presente contrato tem como objetivo a prestação de serviços de consultoria online personalizada, incluindo acompanhamento físico, orientação de treinos, avaliações e suporte online.",
+        `O presente instrumento constitui um ${periodoExplicito}, tendo como objetivo a prestação de serviços de consultoria online personalizada, incluindo acompanhamento físico, orientação de treinos, avaliações e suporte online.`,
     },
     {
       numero: "2",
       titulo: "DURAÇÃO DO PLANO",
-      texto: `O plano contratado terá duração de ${textoDuracaoPlano(duracaoDias)}`,
+      texto: `Trata-se de plano ${tipo.toUpperCase()} de consultoria online. O plano contratado terá duração de ${textoDuracaoPlano(duracaoDias, tipo)}`,
     },
     {
       numero: "3",
@@ -91,9 +97,11 @@ function getVigenciaByPlano(nomePlano: string): string {
       return "Contrato com vigência semestral (180 dias), a partir da data de assinatura, salvo manifestação contrária.";
     case "anual":
       return "Contrato com vigência anual (365 dias), a partir da data de assinatura, salvo manifestação contrária.";
-    case "consultoria_online":
-      return "Contrato de consultoria online com vigência de 365 (trezentos e sessenta e cinco) dias, a partir da data de assinatura, salvo manifestação contrária.";
     default:
+      if (isConsultoriaOnlinePlano(nomePlano)) {
+        const tipo = tipoPeriodoConsultoriaOnline(nomePlano, 0);
+        return `Contrato de consultoria online com vigência ${tipo === "mensal" ? "mensal" : tipo === "trimestral" ? "trimestral (90 dias)" : "semestral (180 dias)"}, a partir da data de assinatura, salvo manifestação contrária.`;
+      }
       return "Contrato com vigência conforme plano contratado, salvo manifestação contrária.";
   }
 }
@@ -134,8 +142,10 @@ export type ContratoEstruturado = {
 };
 
 function getContratoConsultoriaOnline(params: ContratoParams): ContratoEstruturado {
+  const tipo = tipoPeriodoConsultoriaOnline(params.nomePlano, params.duracaoDias);
+  const rotulo = rotuloPeriodoContrato(tipo);
   return {
-    titulo: "CONTRATO DE CONSULTORIA ONLINE PERSONALIZADA",
+    titulo: `CONTRATO DE CONSULTORIA ONLINE PERSONALIZADA – PLANO ${rotulo}`,
     logoPlaceholder: "SUA LOGO AQUI",
     contratadaNome: CONTRATADA_NOME,
     contratadaTitulo: CONTRATADA_TITULO,
@@ -144,8 +154,8 @@ function getContratoConsultoriaOnline(params: ContratoParams): ContratoEstrutura
     cpfContratante: params.cpf,
     telefone: params.telefone ?? null,
     email: params.email,
-    clausulas: clausulasConsultoriaOnline(params.duracaoDias),
-    vigenciaClausula12: textoDuracaoPlano(params.duracaoDias),
+    clausulas: clausulasConsultoriaOnline(params.nomePlano, params.duracaoDias),
+    vigenciaClausula12: textoDuracaoPlano(params.duracaoDias, tipo),
     assinaturaContratada: CONTRATADA_NOME,
     assinaturaContratante: params.nomeAluno,
     blocoAssinaturaDigital:
@@ -181,8 +191,7 @@ function getContratoPresencial(params: ContratoParams): ContratoEstruturado {
 
 /** Considera consultoria online se o nome do plano indicar consultoria online. */
 export function isConsultoriaOnline(nomePlano: string): boolean {
-  const n = nomePlano.toLowerCase().replace(/\s+/g, "_");
-  return n.includes("consultoria") && n.includes("online");
+  return isConsultoriaOnlinePlano(nomePlano);
 }
 
 /** Detecta modelo de consultoria online pelo título gerado. */

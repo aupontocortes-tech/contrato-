@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { toast } from "sonner";
+import { isConsultoriaOnlinePlano, labelPlano, tituloCardPlano } from "@/lib/planos";
 
 const AssinaturaProfessorModal = dynamic(
   () => import("@/components/assinatura-professor-modal").then((m) => ({ default: m.AssinaturaProfessorModal })),
@@ -139,6 +140,17 @@ export default function ContratosPage() {
   const canCreateContract = !errorAlunos && !errorPlanos && alunos.length > 0 && planos.length > 0;
   const loadingOrErrorAlunosPlanos = errorAlunos != null || errorPlanos != null;
 
+  const { planosPresenciais, planosOnline } = useMemo(() => {
+    const pres: Plano[] = [];
+    const onl: Plano[] = [];
+    for (const p of planos) {
+      if (isConsultoriaOnlinePlano(p.nome_plano)) onl.push(p);
+      else pres.push(p);
+    }
+    onl.sort((a, b) => a.duracao_dias - b.duracao_dias);
+    return { planosPresenciais: pres, planosOnline: onl };
+  }, [planos]);
+
   async function handleNovoContrato(e: React.FormEvent) {
     e.preventDefault();
     if (!alunoId || !planoId) {
@@ -257,11 +269,24 @@ export default function ContratosPage() {
                 style={inputSelect}
               >
                 <option value="">Selecione o plano</option>
-                {planos.map((p) => (
-                  <option key={p.id} value={String(p.id)}>
-                    {p.nome_plano} ({p.duracao_dias} dias)
-                  </option>
-                ))}
+                {planosPresenciais.length > 0 && (
+                  <optgroup label="Planos presenciais">
+                    {planosPresenciais.map((p) => (
+                      <option key={p.id} value={String(p.id)}>
+                        {tituloCardPlano(p.nome_plano)} ({p.duracao_dias} dias)
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                {planosOnline.length > 0 && (
+                  <optgroup label="Consultoria online">
+                    {planosOnline.map((p) => (
+                      <option key={p.id} value={String(p.id)}>
+                        {tituloCardPlano(p.nome_plano)} ({p.duracao_dias} dias)
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
               </select>
             </div>
             <div style={{ display: "flex", gap: "8px" }}>
@@ -322,7 +347,7 @@ export default function ContratosPage() {
                     <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "16px" }}>
                       <div>
                         <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: "4px", letterSpacing: "-0.01em" }}>
-                          {c.aluno.nome_completo} · {c.plano.nome_plano.replace(/_/g, " ")}
+                          {c.aluno.nome_completo} · {labelPlano(c.plano.nome_plano, c.plano.duracao_dias)}
                         </div>
                         <p style={{ fontSize: "14px", color: "#64748b", marginBottom: "10px" }}>
                           {new Date(c.data_inicio).toLocaleDateString("pt-BR")} a {new Date(c.data_fim).toLocaleDateString("pt-BR")}

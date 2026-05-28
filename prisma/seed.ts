@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
+import { syncPlanosNoBanco } from "../src/lib/sync-planos";
 
 const prisma = new PrismaClient();
 
@@ -16,20 +17,9 @@ async function main() {
     },
   });
 
-  const count = await prisma.plano.count();
-  if (count === 0) {
-    await prisma.plano.createMany({
-      data: [
-        { nome_plano: "mensal", duracao_dias: 30, descricao: "Plano mensal" },
-        { nome_plano: "trimestral", duracao_dias: 90, descricao: "Plano trimestral" },
-        { nome_plano: "semestral", duracao_dias: 180, descricao: "Plano semestral" },
-        { nome_plano: "anual", duracao_dias: 365, descricao: "Plano anual" },
-        { nome_plano: "consultoria_online", duracao_dias: 365, descricao: "Consultoria online" },
-      ],
-    });
-  }
+  await syncPlanosNoBanco(prisma);
 
-  console.log("Seed: admin@contraton.com / admin123 e planos criados.");
+  console.log("Seed: admin@contraton.com / admin123 e planos (incl. 3 consultoria online) sincronizados.");
 }
 
 main()
