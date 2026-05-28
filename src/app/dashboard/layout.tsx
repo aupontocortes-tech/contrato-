@@ -200,6 +200,13 @@ export default function DashboardLayout({
             <Link href="/dashboard/contratos" onClick={() => setMenuOpen(false)} style={linkStyle(pathname === "/dashboard/contratos", t)}>
               Contratos
             </Link>
+            <Link
+              href="/dashboard/contratos-assinados"
+              onClick={() => setMenuOpen(false)}
+              style={linkStyle(pathname === "/dashboard/contratos-assinados", t)}
+            >
+              Assinados
+            </Link>
           </nav>
         </aside>
 
@@ -233,6 +240,12 @@ export default function DashboardLayout({
             </Link>
             <Link href="/dashboard/contratos" style={linkStyle(pathname === "/dashboard/contratos", t)}>
               Contratos
+            </Link>
+            <Link
+              href="/dashboard/contratos-assinados"
+              style={linkStyle(pathname === "/dashboard/contratos-assinados", t)}
+            >
+              Assinados
             </Link>
           </nav>
         </aside>

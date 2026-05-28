@@ -1,16 +1,25 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Users, FileText, Clock } from "lucide-react";
+import { Users, FileText, Clock, CheckCircle2, ChevronRight } from "lucide-react";
 
 const THEME_KEY = "contraton-theme";
 
 type Stats = {
   totalAlunos: number;
+  contratosAssinados: number;
   contratosAtivos: number;
   contratosPendentes: number;
+};
+
+const cardStyle: CSSProperties = {
+  border: "1px solid #e2e8f0",
+  borderRadius: "16px",
+  backgroundColor: "#fff",
+  padding: "18px",
+  boxShadow: "0 6px 24px rgba(15,23,42,0.06)",
 };
 
 export default function DashboardPage() {
@@ -36,25 +45,24 @@ export default function DashboardPage() {
 
   const [stats, setStats] = useState<Stats>({
     totalAlunos: 0,
+    contratosAssinados: 0,
     contratosAtivos: 0,
     contratosPendentes: 0,
   });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/alunos").then((r) => r.json()).catch(() => []),
-      fetch("/api/contratos").then((r) => r.json()).catch(() => []),
-    ])
-      .then(([alunos, contratos]) => {
-        const alunosArray = Array.isArray(alunos) ? alunos : [];
-        const contratosArray = Array.isArray(contratos) ? contratos : [];
-        
-        setStats({
-          totalAlunos: alunosArray.length,
-          contratosAtivos: contratosArray.filter((c: any) => c.status === "assinado").length,
-          contratosPendentes: contratosArray.filter((c: any) => c.status !== "assinado").length,
-        });
+    fetch("/api/dashboard/resumo")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && typeof data.totalAlunos === "number") {
+          setStats({
+            totalAlunos: data.totalAlunos,
+            contratosAssinados: data.contratosAssinados ?? 0,
+            contratosAtivos: data.contratosAtivos ?? 0,
+            contratosPendentes: data.contratosPendentes ?? 0,
+          });
+        }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -62,31 +70,35 @@ export default function DashboardPage() {
 
   return (
     <div style={{ padding: "8px 4px 20px" }}>
-      <h1 style={{ fontSize: "30px", fontWeight: 700, marginBottom: "24px", color: "#0f172a", letterSpacing: "-0.02em" }}>Dashboard</h1>
-      
-      {/* Seção de boas-vindas com logo e mensagem */}
-      <div style={{ 
-        display: "flex", 
-        flexDirection: "column", 
-        alignItems: "center", 
-        justifyContent: "center",
-        marginBottom: "32px",
-        padding: "20px 0 28px"
-      }}>
-        <div style={{ 
-          maxWidth: "300px",
-          width: "100%"
-        }}>
+      <h1
+        style={{
+          fontSize: "30px",
+          fontWeight: 700,
+          marginBottom: "24px",
+          color: "#0f172a",
+          letterSpacing: "-0.02em",
+        }}
+      >
+        Dashboard
+      </h1>
+
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          marginBottom: "32px",
+          padding: "20px 0 28px",
+        }}
+      >
+        <div style={{ maxWidth: "300px", width: "100%" }}>
           <Image
             src="/dashboard-logo.png"
             alt="Logo Natália Personal"
             width={300}
             height={200}
-            style={{
-              width: "100%",
-              height: "auto",
-              objectFit: "contain"
-            }}
+            style={{ width: "100%", height: "auto", objectFit: "contain" }}
             priority
             unoptimized
           />
@@ -94,76 +106,150 @@ export default function DashboardPage() {
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
-        {/* Cards informativos */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "18px" }}>
-          <div style={{ border: "1px solid #e2e8f0", borderRadius: "16px", backgroundColor: "#fff", padding: "18px", boxShadow: "0 6px 24px rgba(15,23,42,0.06)" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div>
-                <p style={{ fontSize: "14px", color: "#64748b", marginBottom: "6px", fontWeight: 500 }}>Total de Alunos</p>
-                <p style={{ fontSize: "28px", fontWeight: 700, color: "#0f172a", letterSpacing: "-0.02em" }}>
-                  {loading ? "..." : stats.totalAlunos}
-                </p>
-              </div>
-              <div style={{ padding: "10px", backgroundColor: "#eef2ff", borderRadius: "12px" }}>
-                <Users style={{ width: "20px", height: "20px", color: "#4f46e5" }} />
-              </div>
-            </div>
-          </div>
-
-          <div style={{ border: "1px solid #e2e8f0", borderRadius: "16px", backgroundColor: "#fff", padding: "18px", boxShadow: "0 6px 24px rgba(15,23,42,0.06)" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div>
-                <p style={{ fontSize: "14px", color: "#64748b", marginBottom: "6px", fontWeight: 500 }}>Contratos Ativos</p>
-                <p style={{ fontSize: "28px", fontWeight: 700, color: "#0f172a", letterSpacing: "-0.02em" }}>
-                  {loading ? "..." : stats.contratosAtivos}
-                </p>
-              </div>
-              <div style={{ padding: "10px", backgroundColor: "#ecfeff", borderRadius: "12px" }}>
-                <FileText style={{ width: "20px", height: "20px", color: "#16a34a" }} />
-              </div>
-            </div>
-          </div>
-
-          <div style={{ border: "1px solid #e2e8f0", borderRadius: "16px", backgroundColor: "#fff", padding: "18px", boxShadow: "0 6px 24px rgba(15,23,42,0.06)" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div>
-                <p style={{ fontSize: "14px", color: "#64748b", marginBottom: "6px", fontWeight: 500 }}>Pendentes</p>
-                <p style={{ fontSize: "28px", fontWeight: 700, color: "#0f172a", letterSpacing: "-0.02em" }}>
-                  {loading ? "..." : stats.contratosPendentes}
-                </p>
-              </div>
-              <div style={{ padding: "10px", backgroundColor: "#fff7ed", borderRadius: "12px" }}>
-                <Clock style={{ width: "20px", height: "20px", color: "#ea580c" }} />
-              </div>
-            </div>
-          </div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+            gap: "16px",
+          }}
+        >
+          <StatCard
+            label="Total de Alunos"
+            value={loading ? "..." : stats.totalAlunos}
+            icon={<Users style={{ width: 20, height: 20, color: "#4f46e5" }} />}
+            iconBg="#eef2ff"
+          />
+          <StatCard
+            label="Contratos Assinados"
+            value={loading ? "..." : stats.contratosAssinados}
+            icon={<CheckCircle2 style={{ width: 20, height: 20, color: "#16a34a" }} />}
+            iconBg="#ecfdf5"
+          />
+          <StatCard
+            label="Contratos Ativos"
+            value={loading ? "..." : stats.contratosAtivos}
+            subtitle="Vigência em andamento"
+            icon={<FileText style={{ width: 20, height: 20, color: "#0891b2" }} />}
+            iconBg="#ecfeff"
+          />
+          <StatCard
+            label="Pendentes"
+            value={loading ? "..." : stats.contratosPendentes}
+            icon={<Clock style={{ width: 20, height: 20, color: "#ea580c" }} />}
+            iconBg="#fff7ed"
+          />
         </div>
 
-        {/* Ação principal única */}
-        <div style={{ paddingTop: "16px" }}>
+        <section
+          style={{
+            border: "1px solid #e2e8f0",
+            borderRadius: "18px",
+            background: "linear-gradient(135deg, #f8fafc 0%, #ffffff 50%, #eef2ff 100%)",
+            padding: "24px",
+            boxShadow: "0 8px 28px rgba(79,70,229,0.08)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "20px",
+            }}
+          >
+            <div style={{ flex: "1 1 280px" }}>
+              <h2
+                style={{
+                  margin: "0 0 8px",
+                  fontSize: "20px",
+                  fontWeight: 700,
+                  color: "#0f172a",
+                }}
+              >
+                Contratos assinados
+              </h2>
+              <p style={{ margin: 0, fontSize: "14px", color: "#64748b", lineHeight: 1.5 }}>
+                Visualize todos os contratos já assinados (digital ou arquivo enviado), com busca
+                por aluno e acesso rápido ao PDF.
+              </p>
+              {!loading && (
+                <p
+                  style={{
+                    margin: "12px 0 0",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    color: "#4338ca",
+                  }}
+                >
+                  {stats.contratosAssinados} contrato(s) na lista
+                </p>
+              )}
+            </div>
+            <Link href="/dashboard/contratos-assinados" style={{ textDecoration: "none" }}>
+              <button
+                type="button"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "14px 22px",
+                  background: "linear-gradient(180deg, #6366f1 0%, #4f46e5 100%)",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "12px",
+                  fontSize: "15px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  boxShadow: "0 8px 24px rgba(79,70,229,0.35)",
+                }}
+              >
+                Ver contratos assinados
+                <ChevronRight size={18} />
+              </button>
+            </Link>
+          </div>
+        </section>
+
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", paddingTop: "8px" }}>
           <Link href="/dashboard/contratos" style={{ textDecoration: "none" }}>
             <button
+              type="button"
               style={{
-                padding: "12px 24px",
-                backgroundColor: "#4f46e5",
-                color: "#fff",
-                border: "none",
+                padding: "12px 22px",
+                backgroundColor: "#fff",
+                color: "#334155",
+                border: "1px solid #e2e8f0",
                 borderRadius: "10px",
-                fontSize: "16px",
+                fontSize: "15px",
                 fontWeight: 600,
                 cursor: "pointer",
-                boxShadow: "0 8px 22px rgba(79,70,229,0.28)",
+                boxShadow: "0 2px 8px rgba(15,23,42,0.05)",
               }}
-              onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#4338ca")}
-              onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#4f46e5")}
             >
               Criar novo contrato
+            </button>
+          </Link>
+          <Link href="/dashboard/contratos" style={{ textDecoration: "none" }}>
+            <button
+              type="button"
+              style={{
+                padding: "12px 22px",
+                backgroundColor: "#fff",
+                color: "#334155",
+                border: "1px solid #e2e8f0",
+                borderRadius: "10px",
+                fontSize: "15px",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Gerenciar contratos
             </button>
           </Link>
         </div>
       </div>
 
-      {/* Três pontinhos no canto inferior esquerdo — abre menu Normal / Azul (só nesta página) */}
       <div style={{ position: "fixed", bottom: 24, left: 24, zIndex: 50 }}>
         {modoMenuOpen && (
           <div
@@ -234,6 +320,39 @@ export default function DashboardPage() {
         >
           ⋯
         </button>
+      </div>
+    </div>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  subtitle,
+  icon,
+  iconBg,
+}: {
+  label: string;
+  value: string | number;
+  subtitle?: string;
+  icon: ReactNode;
+  iconBg: string;
+}) {
+  return (
+    <div style={cardStyle}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+        <div>
+          <p style={{ fontSize: "14px", color: "#64748b", marginBottom: "6px", fontWeight: 500 }}>
+            {label}
+          </p>
+          <p style={{ fontSize: "28px", fontWeight: 700, color: "#0f172a", letterSpacing: "-0.02em" }}>
+            {value}
+          </p>
+          {subtitle && (
+            <p style={{ fontSize: "12px", color: "#94a3b8", marginTop: "4px" }}>{subtitle}</p>
+          )}
+        </div>
+        <div style={{ padding: "10px", backgroundColor: iconBg, borderRadius: "12px" }}>{icon}</div>
       </div>
     </div>
   );
