@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { normalizarCpfDigitos } from "@/lib/cpf-aluno";
+import { mensagemErroBanco } from "@/lib/prisma-erro";
 
 const createSchema = z
   .object({
@@ -38,8 +39,13 @@ export async function GET() {
     return NextResponse.json(list);
   } catch (e) {
     console.error("GET /api/alunos:", e);
+    const especifico = mensagemErroBanco(e);
     return NextResponse.json(
-      { error: "Erro ao carregar alunos. Verifique a conexão com o banco." },
+      {
+        error:
+          especifico ??
+          "Erro ao carregar alunos. Verifique a conexão com o banco.",
+      },
       { status: 503 }
     );
   }
