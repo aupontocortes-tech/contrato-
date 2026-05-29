@@ -34,6 +34,8 @@ export default function AlunosPage() {
           setAlunos(data);
         } else if (!ok && data && typeof data.error === "string") {
           toast.error(data.error);
+        } else if (!ok) {
+          toast.error("Erro ao carregar alunos. Verifique a conexão com o banco.");
         } else {
           toast.error("Erro ao carregar alunos");
         }

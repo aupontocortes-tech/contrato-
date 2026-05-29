@@ -171,7 +171,7 @@ export default function ContratosAssinadosPage() {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {assinados.map((c) => {
-            const pdfAbrir = c.pdf_contrato_assinado_url || c.pdf_url;
+            const pdfAbrir = `/api/contratos/${c.id}/download-pdf`;
             return (
               <article
                 key={c.id}

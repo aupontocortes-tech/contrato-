@@ -89,7 +89,9 @@ export default function DashboardPage() {
         }
         if (Array.isArray(lista)) setContratos(lista);
       })
-      .catch(() => {})
+      .catch((err) => {
+        console.error("dashboard load:", err);
+      })
       .finally(() => setLoading(false));
   }, []);
 

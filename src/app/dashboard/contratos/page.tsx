@@ -11,7 +11,13 @@ const AssinaturaProfessorModal = dynamic(
   { ssr: false }
 );
 
-type Aluno = { id: number; nome_completo: string; cpf: string; email: string };
+type Aluno = {
+  id: number;
+  nome_completo: string;
+  cpf: string | null;
+  cpf_nao_informado?: boolean;
+  email: string;
+};
 type Plano = { id: number; nome_plano: string; duracao_dias: number };
 type Contrato = {
   id: number;
@@ -578,7 +584,7 @@ export default function ContratosPage() {
                         {temArquivoAssinado ? (
                           <>
                             <a
-                              href={c.pdf_contrato_assinado_url!}
+                              href={`/api/contratos/${c.id}/download-pdf`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="ct-btn"
@@ -663,7 +669,12 @@ export default function ContratosPage() {
                           </>
                         )}
                         {c.pdf_url && (
-                          <a href={c.pdf_url} target="_blank" rel="noopener noreferrer" className="ct-btn">
+                          <a
+                            href={`/api/contratos/${c.id}/download-pdf`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="ct-btn"
+                          >
                             Baixar PDF
                           </a>
                         )}

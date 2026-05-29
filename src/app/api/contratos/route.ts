@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { serializeContratoParaLista } from "@/lib/contrato-serialize";
 
 const createSchema = z.object({
   aluno_id: z.number().int().positive(),
@@ -14,7 +15,7 @@ export async function GET() {
       orderBy: { criado_em: "desc" },
       include: { aluno: true, plano: true },
     });
-    return NextResponse.json(list);
+    return NextResponse.json(list.map(serializeContratoParaLista));
   } catch (e) {
     console.error("GET /api/contratos:", e);
     return NextResponse.json(

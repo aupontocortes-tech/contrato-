@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { normalizarCpfDigitos } from "@/lib/cpf-aluno";
-import { mensagemErroBanco } from "@/lib/prisma-erro";
 
 const createSchema = z
   .object({
@@ -37,14 +36,20 @@ export async function GET() {
   try {
     const list = await prisma.aluno.findMany({ orderBy: { nome_completo: "asc" } });
     return NextResponse.json(list);
-  } catch (e) {
+  } catch (e: unknown) {
     console.error("GET /api/alunos:", e);
-    const especifico = mensagemErroBanco(e);
+    const code =
+      e && typeof e === "object" && "code" in e ? String((e as { code: unknown }).code) : "";
+    const hint =
+      code === "P2022"
+        ? "Atualize o banco: rode npx prisma migrate deploy no projeto."
+        : code === "P1001" || code === "P1000"
+          ? "Verifique DATABASE_URL na Vercel (Session pooler, porta 5432)."
+          : undefined;
     return NextResponse.json(
       {
-        error:
-          especifico ??
-          "Erro ao carregar alunos. Verifique a conexão com o banco.",
+        error: hint ?? "Erro ao carregar alunos. Verifique a conexão com o banco.",
+        code: code || undefined,
       },
       { status: 503 }
     );
